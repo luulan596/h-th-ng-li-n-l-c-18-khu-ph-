@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+  }
+  
+  h1, h2, h3, .font-serif-header {
+    font-family: 'Merriweather', Georgia, serif;
+  }
+}
+
+.font-anton {
+  font-family: 'Anton', 'Be Vietnam Pro', system-ui, sans-serif;
+  letter-spacing: 0.03em;
+}
+
+/* Custom leaflet map popup styling */
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #f59e0b !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: 290px !important;
+}
+
+.leaflet-container {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif !important;
+  z-index: 10 !important;
+}
+
+/* Glass effect utilities */
+.bg-government-red {
+  background-color: #881337;
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.gradient-red-header {
+  background: linear-gradient(135deg, #701a75 0%, #881337 40%, #991b1b 100%);
+}
+
+/* Hide scrollbar for clean horizontal filters */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Lively jumping bounce animation for map icons */
+@keyframes pin-jump {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.05);
+  }
+}
+
+@keyframes selected-pin-jump {
+  0%, 100% {
+    transform: translateY(0) scale(1.15);
+  }
+  50% {
+    transform: translateY(-14px) scale(1.25);
+  }
+}
+
+.animate-pin-jump {
+  animation: pin-jump 1.8s infinite ease-in-out;
+}
+
+.animate-selected-jump {
+  animation: selected-pin-jump 1.2s infinite ease-in-out;
+}
