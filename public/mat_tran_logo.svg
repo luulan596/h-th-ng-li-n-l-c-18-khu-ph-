@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Curved path for top text: MẶT TRẬN TỔ QUỐC -->
+    <path id="topTextPath" d="M 82,250 A 168,168 0 0,1 418,250" fill="none" />
+    <!-- Curved path for bottom text: VIỆT NAM -->
+    <path id="bottomTextPath" d="M 120,330 A 160,160 0 0,0 380,330" fill="none" />
+  </defs>
+
+  <!-- Outer Dark Brown Border Ring -->
+  <circle cx="250" cy="250" r="242" fill="#7A1300" />
+
+  <!-- Main Yellow Background Circle -->
+  <circle cx="250" cy="250" r="226" fill="#FFC800" />
+
+  <!-- Radiating Arches (Rays) on Left and Right -->
+  <g fill="none" stroke="#7A1300" stroke-width="3">
+    <circle cx="250" cy="250" r="218" />
+    <circle cx="250" cy="250" r="210" />
+    <circle cx="250" cy="250" r="202" />
+    <circle cx="250" cy="250" r="194" />
+    <circle cx="250" cy="250" r="186" />
+  </g>
+
+  <!-- Inner Red Circular Shield Base -->
+  <circle cx="250" cy="250" r="180" fill="#E60000" />
+
+  <!-- Top Red Arc Background for MẶT TRẬN TỔ QUỐC -->
+  <path d="M 40,250 A 210,210 0 0,1 460,250 L 420,250 A 170,170 0 0,0 80,250 Z" fill="#E60000" stroke="#7A1300" stroke-width="2" />
+
+  <!-- Top Text: MẶT TRẬN TỔ QUỐC -->
+  <text font-family="'Times New Roman', serif, sans-serif" font-weight="bold" font-size="33" fill="#FFEB3B" text-anchor="middle">
+    <textPath href="#topTextPath" startOffset="50%">MẶT TRẬN TỔ QUỐC</textPath>
+  </text>
+
+  <!-- Bottom Red Banner for VIỆT NAM -->
+  <path d="M 85,355 A 195,195 0 0,0 415,355 L 375,415 A 195,195 0 0,1 125,415 Z" fill="#E60000" stroke="#7A1300" stroke-width="3" />
+
+  <!-- Bottom Text: VIỆT NAM -->
+  <text font-family="'Times New Roman', serif, sans-serif" font-weight="bold" font-size="34" fill="#FFEB3B" text-anchor="middle">
+    <textPath href="#bottomTextPath" startOffset="50%">VIỆT NAM</textPath>
+  </text>
+
+  <!-- Golden 5-Pointed Star in Upper Center -->
+  <g transform="translate(250, 145)">
+    <!-- Yellow Star base -->
+    <polygon points="0,-60 17.6,-18.5 62,-18.5 26,8 39.8,50 0,22.5 -39.8,50 -26,8 -62,-18.5 -17.6,-18.5" fill="#FFD700" stroke="#B8860B" stroke-width="1.5" />
+    <!-- Subtle 3D facets on star -->
+    <polygon points="0,-60 0,0 17.6,-18.5" fill="#FFF176" />
+    <polygon points="62,-18.5 0,0 26,8" fill="#FFF176" />
+    <polygon points="39.8,50 0,0 0,22.5" fill="#FFF176" />
+    <polygon points="-39.8,50 0,0 -26,8" fill="#FFF176" />
+    <polygon points="-62,-18.5 0,0 -17.6,-18.5" fill="#FFF176" />
+  </g>
+
+  <!-- White Lotus Petals Base -->
+  <g fill="#FFFFFF" stroke="#7A1300" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Center Lotus Petal -->
+    <path d="M 250,340 C 235,280 230,220 250,185 C 270,220 265,280 250,340 Z" />
+    <!-- Left Inner Petal -->
+    <path d="M 250,340 C 220,290 195,230 215,200 C 240,240 245,295 250,340 Z" />
+    <!-- Right Inner Petal -->
+    <path d="M 250,340 C 280,290 305,230 285,200 C 260,240 255,295 250,340 Z" />
+    <!-- Left Outer Petal -->
+    <path d="M 250,340 C 190,300 155,250 175,220 C 205,260 230,305 250,340 Z" />
+    <!-- Right Outer Petal -->
+    <path d="M 250,340 C 310,300 345,250 325,220 C 295,260 270,305 250,340 Z" />
+  </g>
+
+  <!-- Lotus Stems & Connectors at Bottom -->
+  <path d="M 250,340 Q 250,370 250,380" stroke="#7A1300" stroke-width="4" fill="none" />
+</svg>

@@ -1,0 +1,10 @@
+{
+  "name": "Remix Danh Sách Nhân Sự Mặt Trận Khu Phố 1",
+  "description": "Ứng dụng tra cứu danh bạ nhân sự Ban công tác Mặt trận khu phố, gọi điện nhanh, bản đồ trụ sở hành chính và đồng bộ Google Sheets/Apps Script.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
