@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { StatsOverview } from './components/StatsOverview';
@@ -10,23 +10,12 @@ import { AppsScriptModal } from './components/AppsScriptModal';
 import { PersonnelFormModal } from './components/PersonnelFormModal';
 import { BottomNav } from './components/BottomNav';
 import { RedSitesView } from './components/RedSitesView';
-import { ToastContainer } from './components/Toast';
-import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { ExcelImportModal } from './components/ExcelImportModal';
 
-import { Personnel, FilterState, SyncStatus, Headquarters, RedSite, ToastMessage } from './types';
+import { Personnel, FilterState, SyncStatus, Headquarters, RedSite } from './types';
 import { INITIAL_PERSONNEL_DATA, ADMINISTRATIVE_HEADQUARTERS, INITIAL_RED_SITES_DATA } from './data/initialData';
 import { isKeyLeader, isDeputyLeader, isPartyOfficial, removeVietnameseTones } from './utils/helpers';
-import {
-  apiFetchPersonnelList,
-  apiSavePersonnel,
-  apiDeletePersonnel,
-  apiPushAllPersonnel,
-  processOfflineSyncQueue,
-  getStoredWebAppUrl,
-  setStoredWebAppUrl,
-} from './services/api';
-import { addToOfflineQueue, getPendingQueueCount } from './services/offlineQueue';
-import { Plus } from 'lucide-react';
+import { Grid, Table, Plus, Download, RefreshCw, Database, MapPin, Users, Landmark, FileSpreadsheet, RotateCcw } from 'lucide-react';
 
 export default function App() {
   // --- Persistent Local & Google Sheet Data State ---
@@ -39,32 +28,15 @@ export default function App() {
   });
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => {
-    const savedUrl = getStoredWebAppUrl();
+    const savedUrl = localStorage.getItem('mt_apps_script_url') || '';
     return {
       isConnected: !!savedUrl,
       webAppUrl: savedUrl,
       lastSynced: null,
       statusMessage: savedUrl ? 'Đã lưu đường dẫn Google Sheet' : 'Chưa kết nối',
       isLoading: false,
-      pendingCount: getPendingQueueCount(),
     };
   });
-
-  // Toast System State
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  const addToast = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string) => {
-    const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    setToasts((prev) => [...prev, { id, type, message }]);
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4500);
-  }, []);
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
 
   // Save to localStorage whenever data changes
   useEffect(() => {
@@ -114,6 +86,7 @@ export default function App() {
     searchQuery: '',
     selectedKhuPho: 'ALL',
     selectedChucDanh: 'ALL',
+    selectedGender: 'ALL',
     onlyCapUy: false,
     selectedDoanThe: 'ALL',
     sortBy: 'stt',
@@ -122,8 +95,22 @@ export default function App() {
   // --- Modal States ---
   const [selectedPersonForCall, setSelectedPersonForCall] = useState<Personnel | null>(null);
   const [isAppsScriptModalOpen, setIsAppsScriptModalOpen] = useState(false);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
+
+  const handleImportExcel = (newPersonnel: Personnel[], mode: 'replace' | 'append') => {
+    if (mode === 'replace') {
+      setPersonnelList(newPersonnel);
+    } else {
+      setPersonnelList((prev) => [...prev, ...newPersonnel]);
+    }
+  };
+
+  const handleResetToDefault = () => {
+    setPersonnelList(INITIAL_PERSONNEL_DATA);
+    localStorage.setItem('mt_personnel_data', JSON.stringify(INITIAL_PERSONNEL_DATA));
+  };
 
   // Available Khu phố List
   const availableKhuPhoList = useMemo(() => {
@@ -135,74 +122,53 @@ export default function App() {
     return Array.from(set);
   }, [personnelList]);
 
-  // Fetch Data from Google Sheets API
+  // Sync with Google Sheet Function
   const fetchFromGoogleSheet = async (urlToUse?: string) => {
     const targetUrl = urlToUse || syncStatus.webAppUrl;
     if (!targetUrl) return;
 
     setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang tải từ Google Sheet...' }));
 
-    const response = await apiFetchPersonnelList(targetUrl);
+    try {
+      const response = await fetch(targetUrl);
+      const result = await response.json();
 
-    if (response.success && response.data && response.data.length > 0) {
-      setPersonnelList(response.data);
-      const timeString = new Date().toLocaleTimeString('vi-VN');
-      setSyncStatus({
-        isConnected: true,
-        webAppUrl: targetUrl,
-        lastSynced: timeString,
-        statusMessage: `Đã đồng bộ thành công lúc ${timeString}`,
-        isLoading: false,
-        pendingCount: getPendingQueueCount(),
-      });
-      addToast('success', `Đã đồng bộ dữ liệu thành công từ Google Sheets (${response.data.length} cán bộ).`);
-    } else {
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        setPersonnelList(result.data);
+        const timeString = new Date().toLocaleTimeString('vi-VN');
+        setSyncStatus({
+          isConnected: true,
+          webAppUrl: targetUrl,
+          lastSynced: timeString,
+          statusMessage: `Đã đồng bộ thành công lúc ${timeString}`,
+          isLoading: false,
+        });
+      } else {
+        setSyncStatus((prev) => ({
+          ...prev,
+          isLoading: false,
+          statusMessage: 'Google Sheet rỗng hoặc dữ liệu chưa đúng cấu trúc.',
+        }));
+      }
+    } catch (err) {
+      console.error('Fetch Google Sheet error:', err);
       setSyncStatus((prev) => ({
         ...prev,
         isLoading: false,
-        statusMessage: response.message || 'Google Sheet rỗng hoặc dữ liệu chưa đúng cấu trúc.',
-        pendingCount: getPendingQueueCount(),
+        statusMessage: 'Lỗi kết nối. Vui lòng kiểm tra lại URL Apps Script.',
       }));
-      addToast('warning', response.message || 'Chưa tải được dữ liệu từ Google Sheets.');
     }
   };
 
   // Sync on startup if URL exists
   useEffect(() => {
-    if (syncStatus.webAppUrl && navigator.onLine) {
+    if (syncStatus.webAppUrl) {
       fetchFromGoogleSheet();
     }
   }, []);
 
-  // Online / Offline & Auto Sync Handling
-  useEffect(() => {
-    const handleOnline = async () => {
-      addToast('info', 'Đã có kết nối mạng trở lại. Đang kiểm tra đồng bộ dữ liệu...');
-      if (syncStatus.webAppUrl) {
-        const { syncedCount } = await processOfflineSyncQueue(syncStatus.webAppUrl);
-        if (syncedCount > 0) {
-          addToast('success', `Đã đồng bộ và lưu dữ liệu thành công vào Google Sheets (${syncedCount} giao dịch).`);
-          fetchFromGoogleSheet();
-        }
-      }
-      setSyncStatus((prev) => ({ ...prev, pendingCount: getPendingQueueCount() }));
-    };
-
-    const handleOffline = () => {
-      addToast('warning', 'Thiết bị đang mất mạng. Dữ liệu sẽ được lưu tạm và đồng bộ khi có kết nối.');
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [syncStatus.webAppUrl, addToast]);
-
   const handleSaveAppsScriptUrl = (url: string) => {
-    setStoredWebAppUrl(url);
+    localStorage.setItem('mt_apps_script_url', url);
     setSyncStatus((prev) => ({ ...prev, webAppUrl: url, isConnected: true }));
     fetchFromGoogleSheet(url);
   };
@@ -210,11 +176,13 @@ export default function App() {
   // Fast Client-Side Memoized Filtering Logic
   const filteredPersonnelList = useMemo(() => {
     return personnelList.filter((p) => {
+      // 1. Smart Search Query (Accent-insensitive, diacritic tolerant & numerical shortcuts)
       if (filters.searchQuery.trim()) {
         const rawQ = filters.searchQuery.trim();
         const normQ = removeVietnameseTones(rawQ).toLowerCase();
         const digitsOnly = rawQ.replace(/\D/g, '');
 
+        // Normalized personnel fields
         const normName = removeVietnameseTones(p.hoTen).toLowerCase();
         const phoneClean = p.soDienThoai.replace(/\D/g, '');
         const normAddress = removeVietnameseTones(p.diaChi).toLowerCase();
@@ -223,8 +191,10 @@ export default function App() {
         const normKP = removeVietnameseTones(p.khuPho || '').toLowerCase();
         const kpDigits = p.khuPho.replace(/\D/g, '');
 
+        // 1. Direct Name Match
         const matchName = normName.includes(normQ) || p.hoTen.toLowerCase().includes(rawQ.toLowerCase());
 
+        // 2. Khu Phố Match (e.g. searching "1", "KP1", "Khu phố 1")
         let matchKP = normKP.includes(normQ);
         if (!matchKP && /^\d{1,2}$/.test(rawQ)) {
           const parsedNum = parseInt(rawQ, 10);
@@ -238,10 +208,15 @@ export default function App() {
           }
         }
 
+        // 3. Phone Match (only when >= 3 digits)
         const matchPhone = digitsOnly.length >= 3 ? phoneClean.includes(digitsOnly) : false;
+
+        // 4. Role, Other Roles, Address
         const matchRole = normRole.includes(normQ);
         const matchOther = normOther.includes(normQ);
         const matchAddress = normAddress.includes(normQ);
+
+        // Explicit STT search only if "stt" is typed
         const matchSTT = normQ.startsWith('stt') && digitsOnly.length > 0 && String(p.stt) === digitsOnly;
 
         if (!matchName && !matchKP && !matchPhone && !matchRole && !matchOther && !matchAddress && !matchSTT) {
@@ -249,20 +224,31 @@ export default function App() {
         }
       }
 
+      // 2. Khu Phố
       if (filters.selectedKhuPho !== 'ALL' && p.khuPho !== filters.selectedKhuPho) {
         return false;
       }
 
+      // 3. Chức danh Mặt trận
       if (filters.selectedChucDanh !== 'ALL') {
+        const cd = p.chucDanhMatTran?.toLowerCase() || '';
         if (filters.selectedChucDanh === 'Trưởng ban' && !isKeyLeader(p)) return false;
         if (filters.selectedChucDanh === 'Phó Trưởng ban' && !isDeputyLeader(p)) return false;
         if (filters.selectedChucDanh === 'Thành viên' && (isKeyLeader(p) || isDeputyLeader(p))) return false;
       }
 
+      // 4. Giới tính
+      if (filters.selectedGender && filters.selectedGender !== 'ALL') {
+        const g = p.gender || (p.namSinhNam ? 'Nam' : p.namSinhNu ? 'Nữ' : '');
+        if (g !== filters.selectedGender) return false;
+      }
+
+      // 5. Cấp ủy Chi bộ
       if (filters.onlyCapUy && !isPartyOfficial(p)) {
         return false;
       }
 
+      // 6. Đoàn thể
       if (filters.selectedDoanThe !== 'ALL') {
         const other = p.chucDanhKhac?.toLowerCase() || '';
         const target = filters.selectedDoanThe.toLowerCase();
@@ -270,13 +256,24 @@ export default function App() {
       }
 
       return true;
+    }).sort((a, b) => {
+      // 1. Sort by Front role priority: Trưởng ban (1) -> Phó Trưởng ban (2) -> Thành viên (3)
+      const getRolePriority = (person: Personnel) => {
+        if (isKeyLeader(person)) return 1;
+        if (isDeputyLeader(person)) return 2;
+        return 3;
+      };
+      const roleDiff = getRolePriority(a) - getRolePriority(b);
+      if (roleDiff !== 0) return roleDiff;
+
+      // 2. Secondary sort: STT / original order
+      return (a.stt || 0) - (b.stt || 0);
     });
   }, [personnelList, filters]);
 
   // Handle Add/Edit Personnel
-  const handleSavePersonnel = async (person: Personnel) => {
+  const handleSavePersonnel = (person: Personnel) => {
     let isUpdate = false;
-
     setPersonnelList((prev) => {
       const existsIndex = prev.findIndex((p) => p.id === person.id);
       if (existsIndex >= 0) {
@@ -289,90 +286,77 @@ export default function App() {
       }
     });
 
-    if (!navigator.onLine || !syncStatus.webAppUrl) {
-      addToOfflineQueue(isUpdate ? 'UPDATE' : 'ADD', person);
-      setSyncStatus((prev) => ({ ...prev, pendingCount: getPendingQueueCount() }));
-      addToast('info', 'Thiết bị đang mất mạng. Dữ liệu đã được lưu tạm và sẽ được đồng bộ khi có kết nối.');
-      return;
-    }
-
-    setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang lưu vào Google Sheet...' }));
-    const res = await apiSavePersonnel(person, isUpdate, syncStatus.webAppUrl);
-
-    setSyncStatus((prev) => ({ ...prev, isLoading: false }));
-
-    if (res.success) {
-      const successMsg = isUpdate ? 'Đã cập nhật dữ liệu thành công.' : 'Đã lưu dữ liệu thành công vào Google Sheets.';
-      addToast('success', successMsg);
-      setSyncStatus((prev) => ({ ...prev, lastSynced: new Date().toLocaleTimeString('vi-VN') }));
-    } else {
-      addToOfflineQueue(isUpdate ? 'UPDATE' : 'ADD', person);
-      setSyncStatus((prev) => ({ ...prev, pendingCount: getPendingQueueCount() }));
-      addToast('error', 'Không thể lưu dữ liệu. Vui lòng kiểm tra kết nối mạng và thử lại.');
+    // If connected to Apps Script, send POST
+    if (syncStatus.webAppUrl) {
+      fetch(syncStatus.webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: isUpdate ? 'UPDATE' : 'ADD', data: person }),
+      }).catch((e) => console.log('POST AppsScript error:', e));
     }
   };
 
   // Handle Delete Personnel
-  const handleDeletePersonnel = async (person: Personnel) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa cán bộ "${person.hoTen}" khỏi danh sách?`)) {
-      return;
-    }
-
+  const handleDeletePersonnel = (person: Personnel) => {
     setPersonnelList((prev) => prev.filter((p) => p.id !== person.id));
 
-    if (!navigator.onLine || !syncStatus.webAppUrl) {
-      addToOfflineQueue('DELETE', person);
-      setSyncStatus((prev) => ({ ...prev, pendingCount: getPendingQueueCount() }));
-      addToast('info', 'Thiết bị đang mất mạng. Yêu cầu xóa đã được lưu tạm và sẽ đồng bộ khi có kết nối.');
-      return;
-    }
-
-    setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang xóa trên Google Sheet...' }));
-    const res = await apiDeletePersonnel(person.id, syncStatus.webAppUrl);
-
-    setSyncStatus((prev) => ({ ...prev, isLoading: false }));
-
-    if (res.success) {
-      addToast('success', 'Đã xóa dữ liệu thành công.');
-    } else {
-      addToOfflineQueue('DELETE', person);
-      setSyncStatus((prev) => ({ ...prev, pendingCount: getPendingQueueCount() }));
-      addToast('error', 'Lỗi xóa dữ liệu trên Google Sheets. Yêu cầu đã được lưu tạm.');
+    if (syncStatus.webAppUrl) {
+      fetch(syncStatus.webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'DELETE', data: person }),
+      }).catch((e) => console.log('Delete AppsScript error:', e));
     }
   };
 
   // Push all local personnel data to Google Sheet
   const handlePushAllToGoogleSheet = async () => {
-    if (!syncStatus.webAppUrl) {
-      addToast('warning', 'Vui lòng nhập Web App URL trước khi đẩy dữ liệu.');
-      return;
-    }
-
+    if (!syncStatus.webAppUrl) return;
     setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang đẩy toàn bộ dữ liệu lên Google Sheet...' }));
-    const res = await apiPushAllPersonnel(personnelList, syncStatus.webAppUrl);
-    setSyncStatus((prev) => ({ ...prev, isLoading: false }));
-
-    if (res.success) {
+    try {
+      await fetch(syncStatus.webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'SYNC_ALL', list: personnelList }),
+      });
       const timeString = new Date().toLocaleTimeString('vi-VN');
       setSyncStatus((prev) => ({
         ...prev,
+        isLoading: false,
         lastSynced: timeString,
         statusMessage: `Đã đồng bộ toàn bộ ${personnelList.length} nhân sự lên Google Sheet thành công!`,
       }));
-      addToast('success', `Đã đẩy toàn bộ ${personnelList.length} cán bộ lên Google Sheets thành công!`);
-    } else {
-      addToast('error', res.message || 'Lỗi khi đẩy dữ liệu lên Google Sheets.');
+    } catch (e) {
+      setSyncStatus((prev) => ({ ...prev, isLoading: false, statusMessage: 'Lỗi kết nối tới Google Apps Script' }));
     }
+  };
+
+  // Export CSV Helper
+  const handleExportCSV = () => {
+    const headers = ['STT', 'Họ và tên', 'Năm sinh Nam', 'Năm sinh Nữ', 'Chức danh Mặt trận', 'Chức danh kiêm nhiệm', 'Địa chỉ', 'Số điện thoại', 'Khu phố'];
+    const rows = filteredPersonnelList.map((p) => [
+      p.stt,
+      `"${p.hoTen}"`,
+      p.namSinhNam || '',
+      p.namSinhNu || '',
+      `"${p.chucDanhMatTran}"`,
+      `"${p.chucDanhKhac || ''}"`,
+      `"${p.diaChi}"`,
+      `"'${p.soDienThoai}"`,
+      `"${p.khuPho}"`,
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Danh_sach_Mat_tran_18_Khu_pho.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 pb-20 font-sans">
-      {/* Toast Notifications System */}
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-
-      {/* PWA Installation Prompt */}
-      <PWAInstallPrompt />
-
+      
       {/* Official Government Header (Only in List view) */}
       {activeTab === 'LIST' && (
         <Header
@@ -386,17 +370,29 @@ export default function App() {
 
       {/* Main Responsive Body Container */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-5">
+        
         {/* Quick Action Toolbar */}
         {activeTab === 'LIST' && (
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              {syncStatus.pendingCount ? (
-                <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                  <span>{syncStatus.pendingCount} thay đổi chờ đồng bộ offline</span>
-                </span>
-              ) : null}
-            </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 mb-3.5">
+            {/* Import Excel Button */}
+            <button
+              onClick={() => setIsExcelModalOpen(true)}
+              className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-all active:scale-95"
+              title="Nhập dữ liệu từ file Excel (.xlsx, .xls, .csv)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-200" />
+              <span>NHẬP EXCEL</span>
+            </button>
+
+            {/* Export CSV Button */}
+            <button
+              onClick={handleExportCSV}
+              className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-colors"
+              title="Xuất file danh bạ CSV"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-600" />
+              <span className="hidden sm:inline">XUẤT CSV</span>
+            </button>
 
             {/* Add Personnel Button */}
             <button
@@ -404,9 +400,9 @@ export default function App() {
                 setEditingPersonnel(null);
                 setIsFormModalOpen(true);
               }}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-all active:scale-95"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>THÊM CÁN BỘ</span>
             </button>
           </div>
@@ -442,6 +438,7 @@ export default function App() {
         {/* Tab 1: Personnel Directory View */}
         {activeTab === 'LIST' && (
           <div className="space-y-4">
+            
             {/* Filter Bar */}
             <FilterBar
               filters={filters}
@@ -485,6 +482,7 @@ export default function App() {
                 onSelectPerson={(p) => setSelectedPersonForCall(p)}
               />
             )}
+
           </div>
         )}
 
@@ -508,13 +506,13 @@ export default function App() {
           />
         )}
 
-        {/* Tab 4: Stats Mobile Tab */}
+        {/* Tab 3: Stats Mobile Tab */}
         {activeTab === 'STATS' && (
           <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
             <h3 className="text-base font-bold font-anton text-red-950 border-b border-slate-200 pb-2">
               THỐNG KÊ CHI TIẾT BAN CÔNG TÁC MẶT TRẬN 18 KHU PHỐ
             </h3>
-
+            
             <div className="space-y-3 text-xs sm:text-sm">
               <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
                 <span className="font-semibold text-slate-700">Tổng số Khu phố:</span>
@@ -535,6 +533,7 @@ export default function App() {
             </div>
           </div>
         )}
+
       </main>
 
       {/* Quick Call & Contact Modal */}
@@ -557,6 +556,15 @@ export default function App() {
         onPushAll={handlePushAllToGoogleSheet}
       />
 
+      {/* Excel / CSV Import Modal */}
+      <ExcelImportModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        onImport={handleImportExcel}
+        onResetToDefault={handleResetToDefault}
+        currentCount={personnelList.length}
+      />
+
       {/* Add/Edit Personnel Modal */}
       <PersonnelFormModal
         isOpen={isFormModalOpen}
@@ -575,6 +583,7 @@ export default function App() {
         onChangeTab={setActiveTab}
         isConnected={syncStatus.isConnected}
       />
+
     </div>
   );
 }

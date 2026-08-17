@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Layers, Database } from 'lucide-react';
+import { RefreshCw, Layers } from 'lucide-react';
 import { SyncStatus } from '../types';
 
 interface HeaderProps {
@@ -41,25 +41,11 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Info & Actions */}
           <div className="flex items-center flex-wrap justify-center md:justify-end gap-2.5">
-            {/* Database / Apps Script Modal Button */}
-            <button
-              onClick={onOpenAppsScriptModal}
-              className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-                syncStatus.isConnected
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
-              }`}
-              title="Cấu hình kết nối Google Sheet"
-            >
-              <Database className="w-4 h-4" />
-              <span>{syncStatus.isConnected ? 'Google Sheet' : 'Kết nối Sheet'}</span>
-            </button>
-
             {/* Manual Refresh Button */}
             <button
               onClick={onRefreshData}
               disabled={syncStatus.isLoading}
-              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 transition-colors cursor-pointer"
+              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 transition-colors"
               title="Cập nhật dữ liệu mới nhất"
             >
               <RefreshCw className={`w-4 h-4 ${syncStatus.isLoading ? 'animate-spin text-amber-600' : ''}`} />

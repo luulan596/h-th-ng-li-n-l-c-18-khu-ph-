@@ -5,11 +5,15 @@ export interface Personnel {
   hoTen: string;
   namSinhNam?: number | string;
   namSinhNu?: number | string;
+  gender?: 'Nam' | 'Nữ' | '';
+  birthYear?: string;
   chucDanhMatTran: 'Trưởng ban' | 'Phó Trưởng ban' | 'Thành viên' | string;
   chucDanhKhac: string;
   diaChi: string;
   soDienThoai: string;
+  phones?: string[];
   isCapUy?: boolean;
+  dataWarning?: string;
   ghiChu?: string;
 }
 
@@ -68,6 +72,7 @@ export interface FilterState {
   searchQuery: string;
   selectedKhuPho: string;
   selectedChucDanh: string;
+  selectedGender: string;
   onlyCapUy: boolean;
   selectedDoanThe: string;
   sortBy: 'stt' | 'name' | 'khuPho';
@@ -79,30 +84,4 @@ export interface SyncStatus {
   lastSynced: string | null;
   statusMessage: string;
   isLoading: boolean;
-  pendingCount?: number;
-}
-
-export interface ApiResponse<T = any> {
-  status?: 'success' | 'error';
-  success: boolean;
-  message: string;
-  data: T;
-  total?: number;
-  errorCode?: string;
-  timestamp?: string;
-}
-
-export interface OfflineQueueItem {
-  txId: string;
-  action: 'ADD' | 'UPDATE' | 'DELETE' | 'SYNC_ALL';
-  data: any;
-  createdAt: string;
-  status: 'PENDING' | 'SYNCING' | 'FAILED';
-  errorMessage?: string;
-}
-
-export interface ToastMessage {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  message: string;
 }

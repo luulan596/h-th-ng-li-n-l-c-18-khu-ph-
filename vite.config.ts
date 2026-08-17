@@ -1,11 +1,10 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { defineConfig } from 'vite';
+import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/h-th-ng-li-n-l-c-18-khu-ph-/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

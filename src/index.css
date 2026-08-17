@@ -1,24 +1,12 @@
 @import "tailwindcss";
 
 @layer base {
-  *, ::before, ::after {
-    box-sizing: border-box;
-  }
-
   body {
     font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    padding-top: env(safe-area-inset-top, 0px);
-    overflow-x: hidden;
   }
   
   h1, h2, h3, .font-serif-header {
     font-family: 'Merriweather', Georgia, serif;
-  }
-
-  /* Tránh iPhone tự động phóng to khi nhấn vào ô nhập liệu */
-  input, select, textarea {
-    font-size: 16px !important;
   }
 }
 
@@ -68,33 +56,7 @@
   scrollbar-width: none;
 }
 
-/* Touch targets >= 44px for buttons */
-button, a {
-  min-height: 38px;
-  touch-action: manipulation;
-}
-
-/* Keyframes & Animations */
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes bounce-slow {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
+/* Lively jumping bounce animation for map icons */
 @keyframes pin-jump {
   0%, 100% {
     transform: translateY(0) scale(1);
@@ -111,14 +73,6 @@ button, a {
   50% {
     transform: translateY(-14px) scale(1.25);
   }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.animate-bounce-slow {
-  animation: bounce-slow 2.5s infinite ease-in-out;
 }
 
 .animate-pin-jump {
