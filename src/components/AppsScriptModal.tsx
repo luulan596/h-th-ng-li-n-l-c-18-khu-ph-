@@ -87,9 +87,9 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({
               <Database className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider">KẾT NỐI GOOGLE SHEET VÀ APPS SCRIPT</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider">CÀI ĐẶT KẾT NỐI DỮ LIỆU BAN CÔNG TÁC MẶT TRẬN</h3>
               <p className="text-xs text-indigo-200">
-                Lưu trữ & đồng bộ dữ liệu trực tiếp với file Google Sheet của cơ quan
+                Cấu hình đường dẫn máy chủ để lưu trữ và tải dữ liệu danh bạ
               </p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
               <span className="w-5 h-5 rounded bg-indigo-950 text-amber-400 flex items-center justify-center text-xs font-bold">1</span>
-              Nhập Google Apps Script Web App URL
+              Nhập Đường dẫn kết nối API Máy chủ (Web App URL)
             </h4>
             
             <div className="flex flex-col sm:flex-row gap-2">
@@ -155,34 +155,25 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({
           <div className="space-y-3">
             <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
               <span className="w-5 h-5 rounded bg-indigo-950 text-amber-400 flex items-center justify-center text-xs font-bold">2</span>
-              Hướng dẫn thiết lập Google Sheet & Apps Script trong 3 bước:
+              Hướng dẫn dành cho Quản trị viên thiết lập hệ thống:
             </h4>
 
             <ol className="list-decimal list-inside space-y-2 text-xs text-slate-700 font-medium bg-amber-50/60 p-4 rounded-xl border border-amber-200">
               <li>
-                <strong>Tạo Google Sheet mới</strong> và copy tiêu đề cột bằng cách nhấn nút dưới đây, sau đó dán vào Dòng 1 của Sheet:
+                <strong>Sao chép tiêu đề cột chuẩn</strong> để tạo bảng lưu trữ:
                 <div className="mt-2">
                   <button
                     onClick={handleCopyHeaders}
                     className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold uppercase tracking-wider rounded-lg text-xs inline-flex items-center gap-1.5 shadow-sm"
                   >
                     {copiedHeaders ? <Check className="w-3.5 h-3.5" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
-                    <span>{copiedHeaders ? 'Đã copy Tiêu đề Cột!' : 'Copy Tiêu đề Cột chuẩn Google Sheet'}</span>
+                    <span>{copiedHeaders ? 'Đã copy Tiêu đề Cột!' : 'Copy Tiêu đề Cột chuẩn'}</span>
                   </button>
                 </div>
               </li>
 
               <li className="pt-2">
-                Trên Google Sheet, chọn menu <strong>Tiện ích mở rộng (Extensions) &gt; Apps Script</strong>, dán toàn bộ đoạn mã bên dưới vào file <code>Code.gs</code>.
-              </li>
-
-              <li className="pt-2">
-                Nhấn <strong>Deploy (Triển khai) &gt; New deployment (Triển khai mới)</strong>:
-                <ul className="list-disc list-inside ml-4 mt-1 text-[11px] text-slate-600 space-y-0.5">
-                  <li>Chọn loại: <strong>Web App</strong></li>
-                  <li>Execute as: <strong>Me (Tôi)</strong></li>
-                  <li>Who has access: <strong>Anyone (Bất kỳ ai)</strong> ⭐ <em>(Quan trọng để web app gọi điện & tra cứu dữ liệu không bị lỗi CORS)</em></li>
-                </ul>
+                Dán mã nguồn API vào trình biên dịch máy chủ và triển khai dưới dạng <strong>Web App (Anyone)</strong>.
               </li>
             </ol>
           </div>
@@ -191,14 +182,14 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                <Code className="w-4 h-4 text-indigo-600" /> Mã nguồn Google Apps Script (Code.gs)
+                <Code className="w-4 h-4 text-indigo-600" /> Mã nguồn Backend API (Mô-đun máy chủ)
               </h4>
               <button
                 onClick={handleCopyCode}
                 className="px-3 py-1 bg-indigo-950 hover:bg-indigo-900 text-amber-300 font-bold uppercase text-[10px] tracking-wider rounded inline-flex items-center gap-1"
               >
                 {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedCode ? 'Đã sao chép mã!' : 'Sao chép mã Apps Script'}</span>
+                <span>{copiedCode ? 'Đã sao chép mã!' : 'Sao chép mã API'}</span>
               </button>
             </div>
 
@@ -213,7 +204,7 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({
         <div className="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between shrink-0">
           <span className="text-xs text-slate-500 font-medium">
             Trạng thái hiện tại: <strong className={syncStatus.isConnected ? 'text-emerald-700' : 'text-amber-700'}>
-              {syncStatus.isConnected ? 'Đang dùng dữ liệu từ Google Sheet' : 'Đang dùng dữ liệu mặc định (18 Khu phố)'}
+              {syncStatus.isConnected ? 'Đang kết nối dữ liệu đám mây' : 'Đang dùng dữ liệu bộ nhớ máy (18 Khu phố)'}
             </strong>
           </span>
 
@@ -236,10 +227,10 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({
                     }}
                     disabled={pushingAll}
                     className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow"
-                    title="Ghi đè toàn bộ danh sách hiện tại lên Google Sheet"
+                    title="Đồng bộ danh sách hiện tại lên máy chủ"
                   >
                     {pushingAll ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
-                    <span>{pushingAll ? 'Đang đẩy...' : 'Khởi tạo dữ liệu lên Sheet'}</span>
+                    <span>{pushingAll ? 'Đang lưu...' : 'Lưu dữ liệu'}</span>
                   </button>
                 )}
                 <button
@@ -250,12 +241,13 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Tải từ Sheet</span>
+                  <span>Tải dữ liệu mới</span>
                 </button>
               </>
             )}
           </div>
         </div>
+
 
       </div>
     </div>

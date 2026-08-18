@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MessageCircle, Copy, MapPin, X, Check, Shield, Award, Share2, AlertTriangle, User } from 'lucide-react';
+import { Phone, MessageCircle, Copy, MapPin, X, Check, Shield, Award, AlertTriangle, User } from 'lucide-react';
 import { Personnel } from '../types';
 import { isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
 
@@ -29,28 +29,6 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
     setTimeout(() => setCopiedPhoneIndex(null), 2000);
   };
 
-  const handleShareContact = async () => {
-    const text = `${personnel.hoTen} (${personnel.chucDanhMatTran || 'Thành viên'} - ${personnel.khuPho}): ${
-      phoneList.length > 0 ? phoneList.join(', ') : 'Chưa có số'
-    }`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Cán bộ ${personnel.hoTen}`,
-          text: text,
-        });
-      } catch {
-        navigator.clipboard.writeText(text);
-        setCopiedPhoneIndex(0);
-        setTimeout(() => setCopiedPhoneIndex(null), 2000);
-      }
-    } else {
-      navigator.clipboard.writeText(text);
-      setCopiedPhoneIndex(0);
-      setTimeout(() => setCopiedPhoneIndex(null), 2000);
-    }
-  };
-
   const isLeader = isKeyLeader(personnel);
   const isDeputy = isDeputyLeader(personnel);
   const isParty = isPartyOfficial(personnel);
@@ -59,7 +37,7 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-slide-up">
         
-        {/* Header with Indigo Government styling */}
+        {/* Header */}
         <div className="relative bg-indigo-950 p-5 text-white border-b border-indigo-900">
           <button
             onClick={onClose}
@@ -202,15 +180,6 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
               </div>
             ))
           )}
-
-          {/* Share Contact Button */}
-          <button
-            onClick={handleShareContact}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-colors"
-          >
-            <Share2 className="w-4 h-4" />
-            <span>CHIA SẺ THÔNG TIN LIÊN HỆ</span>
-          </button>
 
         </div>
 

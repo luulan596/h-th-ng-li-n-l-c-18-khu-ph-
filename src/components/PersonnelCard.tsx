@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MapPin, Award, Shield, Copy, Check, MessageCircle, AlertTriangle, Calendar, User } from 'lucide-react';
+import { Phone, MapPin, Award, Shield, Copy, Check, MessageCircle, AlertTriangle, Lock } from 'lucide-react';
 import { Personnel } from '../types';
 import { isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink } from '../utils/helpers';
 
@@ -7,11 +7,13 @@ interface PersonnelCardProps {
   personnel: Personnel;
   onSelectPerson: (person: Personnel) => void;
   onEditPerson?: (person: Personnel) => void;
+  onOpenAuthModal?: () => void;
 }
 
 export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   personnel,
   onSelectPerson,
+  onOpenAuthModal,
 }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -30,6 +32,8 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
     }
     return [];
   }, [personnel.phones, personnel.soDienThoai]);
+
+  const isProtectedPhone = phoneList.some(p => p.includes('🔒') || p.includes('Đăng nhập'));
 
   // Gender & Birth Year
   const gender = personnel.gender || (personnel.namSinhNam ? 'Nam' : personnel.namSinhNu ? 'Nữ' : '');
@@ -137,7 +141,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
 
       </div>
 
-      {/* Footer Bar with Phone Controls */}
+      {/* Footer Bar with Phone Controls (Public Read - Direct Call & Copy) */}
       <div className="px-3 py-2 bg-slate-50/90 border-t border-slate-200/80 flex flex-col gap-1.5">
         {phoneList.length === 0 ? (
           <div className="flex items-center justify-between text-xs text-slate-400 italic">
@@ -166,7 +170,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
               <div className="flex items-center gap-1 shrink-0">
                 <a
                   href={getTelLink(phone)}
-                  className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-2xs transition-colors"
+                  className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-2xs transition-colors active:scale-95"
                   title={`Gọi ${phone}`}
                 >
                   <Phone className="w-2.5 h-2.5 fill-white" />
@@ -175,7 +179,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
 
                 <button
                   onClick={(e) => handleCopyPhone(e, phone, idx)}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5 shadow-2xs transition-colors ${
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5 shadow-2xs transition-colors active:scale-95 ${
                     copiedIndex === idx
                       ? 'bg-emerald-800 text-white'
                       : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -199,7 +203,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
                   <button
                     onClick={() => onSelectPerson(personnel)}
                     className="px-1.5 py-0.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-[10px] font-bold flex items-center gap-0.5 shadow-2xs transition-colors"
-                    title="Xem chi tiết & tùy chọn liên hệ"
+                    title="Xem chi tiết"
                   >
                     <MessageCircle className="w-2.5 h-2.5 text-indigo-600" />
                     <span className="hidden sm:inline">XEM</span>
@@ -211,6 +215,8 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
         )}
       </div>
 
+
     </div>
   );
 };
+

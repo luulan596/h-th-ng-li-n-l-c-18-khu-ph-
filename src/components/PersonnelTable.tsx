@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Phone, MapPin, Award, MessageCircle, Copy, Check, AlertTriangle } from 'lucide-react';
+import { Phone, MapPin, Award, MessageCircle, Copy, Check, AlertTriangle, Lock } from 'lucide-react';
 import { Personnel } from '../types';
 import { isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink } from '../utils/helpers';
 
 interface PersonnelTableProps {
   personnelList: Personnel[];
   onSelectPerson: (person: Personnel) => void;
+  onOpenAuthModal?: () => void;
 }
 
 export const PersonnelTable: React.FC<PersonnelTableProps> = ({
   personnelList,
   onSelectPerson,
+  onOpenAuthModal,
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -62,6 +64,8 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                   : p.soDienThoai
                   ? p.soDienThoai.split(/[\/\n,]+/).map(s => s.trim()).filter(Boolean)
                   : [];
+
+                const isProtectedPhone = phoneList.some(ph => ph.includes('🔒') || ph.includes('Đăng nhập'));
 
                 return (
                   <tr
@@ -150,22 +154,39 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                       </span>
                     </td>
 
-                    {/* Phone Number with Direct Calling */}
+                    {/* Phone Number & Direct Actions */}
                     <td className="py-3 px-3 text-center">
                       {phoneList.length === 0 ? (
                         <span className="text-slate-400 italic text-[11px]">Chưa cập nhật</span>
                       ) : (
-                        <div className="flex flex-col gap-1 items-center">
+                        <div className="flex flex-col gap-1.5 items-center justify-center">
                           {phoneList.map((ph, i) => (
-                            <a
-                              key={i}
-                              href={getTelLink(ph)}
-                              className="inline-flex items-center gap-1 font-mono font-bold text-indigo-700 hover:text-indigo-900 hover:underline px-1.5 py-0.5 rounded transition-colors text-xs"
-                              title={`Bấm để gọi ${ph}`}
-                            >
-                              <Phone className="w-3 h-3 fill-indigo-600 text-indigo-600" />
-                              <span>{formatPhoneNumber(ph)}</span>
-                            </a>
+                            <div key={i} className="flex items-center gap-1">
+                              <a
+                                href={getTelLink(ph)}
+                                className="inline-flex items-center gap-1 font-mono font-bold text-indigo-700 hover:text-indigo-900 hover:underline px-1.5 py-0.5 rounded transition-colors text-xs"
+                                title={`Bấm để gọi ${ph}`}
+                              >
+                                <Phone className="w-3 h-3 fill-indigo-600 text-indigo-600" />
+                                <span>{formatPhoneNumber(ph)}</span>
+                              </a>
+                              <a
+                                href={getTelLink(ph)}
+                                className="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[9px] uppercase shadow-2xs transition-colors flex items-center gap-0.5"
+                                title="Gọi ngay"
+                              >
+                                <Phone className="w-2.5 h-2.5 fill-white" /> Gọi
+                              </a>
+                              <button
+                                onClick={(e) => handleCopyPhone(`${p.id}-${i}`, ph, e)}
+                                className={`p-1 rounded text-[9px] font-bold uppercase shadow-2xs transition-colors ${
+                                  copiedId === `${p.id}-${i}` ? 'bg-emerald-800 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                }`}
+                                title="Sao chép SĐT"
+                              >
+                                {copiedId === `${p.id}-${i}` ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Copy className="w-2.5 h-2.5" />}
+                              </button>
+                            </div>
                           ))}
                           {p.dataWarning && (
                             <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200" title={p.dataWarning}>
@@ -179,26 +200,6 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                     {/* Action Buttons */}
                     <td className="py-3 px-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        {phoneList.length > 0 ? (
-                          <>
-                            <a
-                              href={getTelLink(phoneList[0])}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] uppercase shadow-2xs transition-colors flex items-center justify-center gap-1"
-                              title="Gọi điện ngay"
-                            >
-                              <Phone className="w-3 h-3 fill-white" /> Gọi
-                            </a>
-                            <button
-                              onClick={(e) => handleCopyPhone(p.id, phoneList[0], e)}
-                              className={`p-1.5 rounded text-[10px] font-bold uppercase shadow-2xs transition-colors ${
-                                isCopied ? 'bg-emerald-800 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                              }`}
-                              title="Sao chép SĐT"
-                            >
-                              {isCopied ? <Check className="w-3 h-3 stroke-[3]" /> : <Copy className="w-3 h-3" />}
-                            </button>
-                          </>
-                        ) : null}
                         <button
                           onClick={() => onSelectPerson(p)}
                           className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded font-bold text-[10px] uppercase shadow-2xs transition-colors flex items-center justify-center gap-1"
@@ -208,6 +209,7 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                         </button>
                       </div>
                     </td>
+
 
                   </tr>
                 );
@@ -219,3 +221,4 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
     </div>
   );
 };
+
