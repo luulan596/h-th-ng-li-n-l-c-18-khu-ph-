@@ -1,4 +1,4 @@
-import { Personnel, SyncStatus } from '../types';
+import { Personnel, Headquarters, SyncStatus } from '../types';
 import { getIdToken } from './auth';
 
 export interface ApiResponse<T = any> {
@@ -119,6 +119,13 @@ export async function getPublicContactsApi(customUrl?: string): Promise<ApiRespo
 
 export async function getPublicPersonnelApi(customUrl?: string): Promise<ApiResponse<Personnel[]>> {
   return getPublicContactsApi(customUrl);
+}
+
+/**
+ * Fetch Public Headquarters (23 locations: 5 ward agencies + 18 KP headquarters)
+ */
+export async function getPublicHeadquartersApi(customUrl?: string): Promise<ApiResponse<Headquarters[]>> {
+  return callApi<Headquarters[]>('GET_PUBLIC_HEADQUARTERS', {}, customUrl);
 }
 
 

@@ -17,7 +17,7 @@ import { Personnel, FilterState, SyncStatus, Headquarters, RedSite } from './typ
 import { ADMINISTRATIVE_HEADQUARTERS, INITIAL_RED_SITES_DATA } from './data/initialData';
 import { isKeyLeader, isDeputyLeader, isPartyOfficial, removeVietnameseTones } from './utils/helpers';
 import { Grid, Table, Plus, Download, RefreshCw, Database, MapPin, Users, Landmark, FileSpreadsheet, RotateCcw, WifiOff, Lock } from 'lucide-react';
-import { getPersonnelApi, getPublicPersonnelApi, getDataVersionApi, createPersonnelApi, updatePersonnelApi, deletePersonnelApi, syncAllPersonnelApi, getApiUrl, setApiUrl } from './services/api';
+import { getPersonnelApi, getPublicPersonnelApi, getPublicHeadquartersApi, getDataVersionApi, createPersonnelApi, updatePersonnelApi, deletePersonnelApi, syncAllPersonnelApi, getApiUrl, setApiUrl } from './services/api';
 import { getPersonnelCache, savePersonnelCache, getMetaValue, saveMetaValue, getHeadquartersCache, saveHeadquartersCache } from './services/db';
 import { getUserSession, UserSession } from './services/auth';
 import { SkeletonGrid, SkeletonTable } from './components/SkeletonLoader';
@@ -111,6 +111,22 @@ export default function App() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
 
+  // --- Headquarters Fetch Helper (GET_PUBLIC_HEADQUARTERS) ---
+  const fetchAndSyncHeadquartersData = async (targetUrl?: string) => {
+    const url = targetUrl || getApiUrl();
+    if (!url || (typeof window !== 'undefined' && !window.navigator.onLine)) return;
+    try {
+      const hqRes = await getPublicHeadquartersApi(url);
+      if (hqRes.success && Array.isArray(hqRes.data) && hqRes.data.length > 0) {
+        setHeadquartersList(hqRes.data);
+        saveHeadquartersCache(hqRes.data);
+        localStorage.setItem('mt_headquarters_data', JSON.stringify(hqRes.data));
+      }
+    } catch (err) {
+      console.error('fetchAndSyncHeadquartersData error:', err);
+    }
+  };
+
   // --- Centralized Data Fetch & DATA_VERSION Sync Helper ---
   const fetchAndSyncData = async (isManual = false, hasExistingCache = false) => {
     const targetUrl = getApiUrl();
@@ -135,6 +151,9 @@ export default function App() {
     try {
       setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang kiểm tra phiên bản dữ liệu...' }));
       setDataFetchError(null);
+
+      // Đồng bộ dữ liệu trụ sở công khai ngầm ở background
+      fetchAndSyncHeadquartersData(targetUrl);
 
       // 1. Kiểm tra DATA_VERSION nhẹ từ máy chủ
       const versionRes = await getDataVersionApi(targetUrl);
@@ -202,6 +221,12 @@ export default function App() {
       setIsLoadingData(true);
       setDataFetchError(null);
       try {
+        // Load cached headquarters list
+        const cachedHq = await getHeadquartersCache();
+        if (cachedHq && cachedHq.length > 0) {
+          setHeadquartersList(cachedHq);
+        }
+
         const cachedPersonnel = await getPersonnelCache();
         const localVer = await getMetaValue('personnel_version');
         const hasCache = cachedPersonnel && cachedPersonnel.length > 0;

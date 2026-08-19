@@ -543,6 +543,7 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
   }
 ];
 
+// Dữ liệu dự phòng (Fallback Offline) cho Trụ sở & Cơ quan khi chưa từng kết nối máy chủ
 export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
   {
     id: 'ubnd-phuong',
@@ -683,6 +684,162 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP6',
     toaDo: { lat: 10.7525, lng: 106.6495 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 6.'
+  },
+  {
+    id: 'ts-kp7',
+    tenTruSo: 'Trụ sở Khu phố 7',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 7',
+    diaChi: '120 Gia Phú, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0908123777',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Nguyễn Văn Minh',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP7',
+    toaDo: { lat: 10.7490, lng: 106.6545 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 7.'
+  },
+  {
+    id: 'ts-kp8',
+    tenTruSo: 'Trụ sở Khu phố 8',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 8',
+    diaChi: '45 Văn Thân, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0913987654',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Lê Văn Tám',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP8',
+    toaDo: { lat: 10.7502, lng: 106.6538 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 8.'
+  },
+  {
+    id: 'ts-kp9',
+    tenTruSo: 'Trụ sở Khu phố 9',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 9',
+    diaChi: '112 Hậu Giang, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0903112244',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Trần Thị Kim',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP9',
+    toaDo: { lat: 10.7515, lng: 106.6488 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 9.'
+  },
+  {
+    id: 'ts-kp10',
+    tenTruSo: 'Trụ sở Khu phố 10',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 10',
+    diaChi: '56 Bình Tây, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0989556677',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Vũ Quốc Hùng',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP10',
+    toaDo: { lat: 10.7512, lng: 106.6500 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 10.'
+  },
+  {
+    id: 'ts-kp11',
+    tenTruSo: 'Trụ sở Khu phố 11',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 11',
+    diaChi: '42 Mai Xuân Thưởng, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0908778899',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Đỗ Thị Huệ',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP11',
+    toaDo: { lat: 10.7520, lng: 106.6510 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 11.'
+  },
+  {
+    id: 'ts-kp12',
+    tenTruSo: 'Trụ sở Khu phố 12',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 12',
+    diaChi: '88 Cao Văn Lầu, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0918334455',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Phạm Hồng Sơn',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP12',
+    toaDo: { lat: 10.7480, lng: 106.6528 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 12.'
+  },
+  {
+    id: 'ts-kp13',
+    tenTruSo: 'Trụ sở Khu phố 13',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 13',
+    diaChi: '250 Trang Tử, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0903998811',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Bùi Thị Loan',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP13',
+    toaDo: { lat: 10.7528, lng: 106.6482 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 13.'
+  },
+  {
+    id: 'ts-kp14',
+    tenTruSo: 'Trụ sở Khu phố 14',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 14',
+    diaChi: '180 Lê Quang Sung, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0912443322',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Lương Văn Thành',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP14',
+    toaDo: { lat: 10.7532, lng: 106.6490 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 14.'
+  },
+  {
+    id: 'ts-kp15',
+    tenTruSo: 'Trụ sở Khu phố 15',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 15',
+    diaChi: '35 Tháp Mười, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0908556611',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Ngô Thanh Hải',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP15',
+    toaDo: { lat: 10.7535, lng: 106.6505 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 15.'
+  },
+  {
+    id: 'ts-kp16',
+    tenTruSo: 'Trụ sở Khu phố 16',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 16',
+    diaChi: '92 Phan Văn Khỏe, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0919223344',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Hoàng Văn Phúc',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP16',
+    toaDo: { lat: 10.7540, lng: 106.6515 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 16.'
+  },
+  {
+    id: 'ts-kp17',
+    tenTruSo: 'Trụ sở Khu phố 17',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 17',
+    diaChi: '15 Nguyễn Hữu Thận, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0903778811',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Đinh Thiện Nhân',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP17',
+    toaDo: { lat: 10.7522, lng: 106.6530 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 17.'
+  },
+  {
+    id: 'ts-kp18',
+    tenTruSo: 'Trụ sở Khu phố 18',
+    loaiTruSo: 'khu_pho',
+    khuPhoThuocVong: 'Khu phố 18',
+    diaChi: '68 Ngô Nhân Tịnh, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0918667788',
+    gioLamViec: '08:00 - 17:00',
+    canBoPhuTrach: 'Huỳnh Văn Đức',
+    chucVuCanBo: 'Trưởng Ban CT Mặt trận KP18',
+    toaDo: { lat: 10.7518, lng: 106.6540 },
+    moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 18.'
   }
 ];
 

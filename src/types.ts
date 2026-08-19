@@ -22,18 +22,21 @@ export type HeadquartersType = 'ubnd' | 'mat_tran' | 'cong_an' | 'quan_su' | 'y_
 export interface Headquarters {
   id: string;
   tenTruSo: string;
-  loaiTruSo: HeadquartersType;
-  khuPhoThuocVong?: string;
-  diaChi: string;
-  soDienThoai: string;
-  gioLamViec: string;
-  canBoPhuTrach: string;
-  chucVuCanBo: string;
   toaDo: {
     lat: number;
     lng: number;
   };
-  moTaChucNang: string;
+  updatedAt?: string;
+  loaiDiem?: 'KHU_PHO' | 'CO_QUAN' | string;
+  khuPho?: string;
+  diaChi?: string;
+  soDienThoai?: string;
+  loaiTruSo?: HeadquartersType;
+  khuPhoThuocVong?: string;
+  gioLamViec?: string;
+  canBoPhuTrach?: string;
+  chucVuCanBo?: string;
+  moTaChucNang?: string;
 }
 
 export interface RedSite {
