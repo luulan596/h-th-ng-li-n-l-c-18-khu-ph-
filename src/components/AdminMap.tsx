@@ -172,6 +172,76 @@ export const AdminMap: React.FC<AdminMapProps> = ({
     });
   }, [allLocationItems, selectedKhuPhoFilter, selectedCategory]);
 
+  // Group 23 Headquarters records dynamically for the Quick Jump dropdown (excludes Red Sites)
+  const { wardAgencies, kpHeadquarters } = useMemo(() => {
+    const agencies: MapLocationItem[] = [];
+    const kps: MapLocationItem[] = [];
+
+    hqItems.forEach((item) => {
+      const isKp = item.loaiDiem === 'KHU_PHO' || item.loaiTruSo === 'khu_pho' || item.shortLabel.startsWith('KP');
+      if (isKp) {
+        kps.push(item);
+      } else {
+        agencies.push(item);
+      }
+    });
+
+    // Desired order for agencies: UBND, MTTQ, CA, QS, YT
+    const agencyOrder: { [key: string]: number } = {
+      UBND: 1,
+      MTTQ: 2,
+      CA: 3,
+      QS: 4,
+      YT: 5,
+    };
+
+    agencies.sort((a, b) => {
+      const orderA = agencyOrder[a.shortLabel] || 99;
+      const orderB = agencyOrder[b.shortLabel] || 99;
+      return orderA - orderB;
+    });
+
+    // Numeric sort for KP headquarters: KP1..KP18
+    kps.sort((a, b) => {
+      const numA = parseInt(a.shortLabel.replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(b.shortLabel.replace(/\D/g, ''), 10) || 0;
+      return numA - numB;
+    });
+
+    return { wardAgencies: agencies, kpHeadquarters: kps };
+  }, [hqItems]);
+
+  // Handle Quick Jump selection from dropdown
+  const handleQuickJumpChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    if (!selectedId) {
+      handleResetView();
+      return;
+    }
+
+    // Find renderLocation corresponding to selectedId
+    const foundRenderItem = renderLocations.find(({ item }) => item.id === selectedId);
+    if (foundRenderItem && mapInstanceRef.current) {
+      const { item, renderLat, renderLng } = foundRenderItem;
+      setSelectedLocation(item);
+      mapInstanceRef.current.flyTo([renderLat, renderLng], 17, { duration: 0.8 });
+    }
+  };
+
+  // Reset map view to full bounds based dynamically on all location items
+  const handleResetView = () => {
+    setSelectedLocation(null);
+    if (mapInstanceRef.current && allLocationItems.length > 0) {
+      const bounds = L.latLngBounds(allLocationItems.map((item) => [item.toaDo.lat, item.toaDo.lng]));
+      mapInstanceRef.current.fitBounds(bounds, {
+        padding: [30, 30],
+        maxZoom: 16,
+        animate: true,
+        duration: 0.8,
+      });
+    }
+  };
+
   // Handle marker overlap (e.g. KP12 & KP14 at 10.739932, 106.637962; KP13 & KP15 at 10.744097, 106.638407)
   // Calculate tiny rendering offsets so markers sharing exact lat,lng appear side-by-side without obscuring each other.
   const renderLocations = useMemo(() => {
@@ -229,28 +299,34 @@ export const AdminMap: React.FC<AdminMapProps> = ({
       let bgColor = 'bg-red-700';
       let borderColor = 'border-amber-300';
       let icon = '🏠';
+      let labelColor = 'text-amber-200';
 
       if (item.loaiDiem === 'CO_QUAN' || item.loaiTruSo !== 'khu_pho') {
         if (item.shortLabel === 'UBND') {
           bgColor = 'bg-red-800';
           borderColor = 'border-amber-400';
           icon = '🏛️';
+          labelColor = 'text-amber-200';
         } else if (item.shortLabel === 'MTTQ') {
           bgColor = 'bg-red-900';
           borderColor = 'border-amber-400';
-          icon = '🔰';
+          icon = `<svg class="w-3.5 h-3.5 fill-amber-400 shrink-0 inline-block" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+          labelColor = 'text-white';
         } else if (item.shortLabel === 'CA') {
           bgColor = 'bg-blue-700';
           borderColor = 'border-amber-300';
           icon = '🛡️';
+          labelColor = 'text-amber-200';
         } else if (item.shortLabel === 'QS') {
           bgColor = 'bg-emerald-700';
           borderColor = 'border-amber-300';
           icon = '🎖️';
+          labelColor = 'text-amber-200';
         } else if (item.shortLabel === 'YT') {
           bgColor = 'bg-sky-700';
           borderColor = 'border-amber-300';
           icon = '🏥';
+          labelColor = 'text-amber-200';
         }
       }
 
@@ -258,7 +334,7 @@ export const AdminMap: React.FC<AdminMapProps> = ({
         <div class="relative group cursor-pointer flex flex-col items-center ${animClass}">
           <div class="flex items-center gap-1 px-2.5 py-1 rounded-full ${bgColor} text-white border-2 ${borderColor} ${ringClass} font-black text-xs shadow-lg whitespace-nowrap transition-all">
             <span class="text-xs">${icon}</span>
-            <span class="tracking-wide text-[11px] font-bold text-amber-200">${item.shortLabel}</span>
+            <span class="tracking-wide text-[11px] font-bold ${labelColor}">${item.shortLabel}</span>
           </div>
           <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-amber-400 -mt-[1px]"></div>
         </div>
@@ -391,6 +467,46 @@ export const AdminMap: React.FC<AdminMapProps> = ({
           >
             <Landmark className="w-3.5 h-3.5 text-amber-300" />
             <span>Địa chỉ đỏ ({redSitesList.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Jump Bar - Đến nhanh Trụ sở / Cơ quan */}
+      <div className="bg-amber-50/90 border-b border-amber-200 px-3.5 py-2.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs">
+        <div className="flex items-center gap-2 text-xs font-black uppercase text-amber-950 tracking-wider shrink-0">
+          <Navigation className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>ĐẾN NHANH TRỤ SỞ / CƠ QUAN</span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-1 max-w-full sm:max-w-xl">
+          <select
+            value={selectedLocation && !selectedLocation.isRedSite ? selectedLocation.id : ''}
+            onChange={handleQuickJumpChange}
+            className="w-full min-h-[44px] px-3 py-2 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs cursor-pointer truncate"
+          >
+            <option value="">-- Chọn cơ quan hoặc trụ sở... --</option>
+            <optgroup label="🏛️ CƠ QUAN PHƯỜNG">
+              {wardAgencies.map((agency) => (
+                <option key={agency.id} value={agency.id}>
+                  {agency.title}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="🏠 TRỤ SỞ KHU PHỐ">
+              {kpHeadquarters.map((kp) => (
+                <option key={kp.id} value={kp.id}>
+                  {kp.title}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+
+          <button
+            onClick={handleResetView}
+            className="min-h-[44px] px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-amber-300 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm shrink-0 active:scale-95 transition-all"
+            title="Xem toàn bộ bản đồ"
+          >
+            <span>XEM TOÀN BỘ</span>
           </button>
         </div>
       </div>
