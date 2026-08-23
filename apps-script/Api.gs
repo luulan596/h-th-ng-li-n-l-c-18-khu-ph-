@@ -18,6 +18,24 @@ function handleApiRequest(contents) {
         timestamp: new Date().toISOString()
       });
 
+    case "VERIFY_PIN":
+      var pinInput = contents.pin || contents.idToken || "";
+      var pinUser = verifyGoogleToken(pinInput);
+      if (pinUser) {
+        return createJsonResponse({
+          success: true,
+          message: "Xác thực mã PIN Admin thành công",
+          user: pinUser,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        return createJsonResponse({
+          success: false,
+          message: "Mã PIN không chính xác",
+          timestamp: new Date().toISOString()
+        });
+      }
+
     case "GET_DATA_VERSION":
       var currentVersion = getDataVersion();
       return createJsonResponse({

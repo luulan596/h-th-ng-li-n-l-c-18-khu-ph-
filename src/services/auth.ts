@@ -48,11 +48,12 @@ export function isUserAdminUnlocked(): boolean {
 export function unlockAdminMode(pin: string): boolean {
   if (pin === DEFAULT_ADMIN_PIN || pin === '123456') {
     localStorage.setItem(STORAGE_KEY_ADMIN_PIN, 'true');
-    // Save pseudo session for PIN unlock compatibility
+    // Save pseudo session for PIN unlock compatibility with idToken
     setUserSession({
       email: 'admin@binhtien.gov.vn',
       name: 'Quản trị viên hệ thống',
       role: 'ADMIN',
+      idToken: pin,
     });
     return true;
   }

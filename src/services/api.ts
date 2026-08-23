@@ -58,15 +58,20 @@ export async function callApi<T = any>(
       timestamp: new Date().toISOString(),
     });
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(targetUrl, {
       method: 'POST',
       body: bodyPayload,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return {
         success: false,
-        message: `Không thể kết nối máy chủ (Mã lỗi: ${response.status})`,
+        message: 'Không thể kết nối với máy chủ.',
       };
     }
 
@@ -90,15 +95,22 @@ export async function callApi<T = any>(
 
     return {
       success: false,
-      message: json.message || 'Phản hồi từ máy chủ không đúng định dạng.',
+      message: json.message || 'Phản hồi từ máy chủ chưa sẵn sàng.',
       data: json.data,
       version: json.version,
     };
   } catch (err: any) {
+    if (err.name === 'AbortError') {
+      console.warn(`API Timeout [${action}]`);
+      return {
+        success: false,
+        message: 'Thời gian phản hồi vượt quá giới hạn.',
+      };
+    }
     console.error(`API Error [${action}]:`, err);
     return {
       success: false,
-      message: 'Không thể kết nối với máy chủ. Vui lòng thử lại sau.',
+      message: 'Không thể kết nối máy chủ.',
     };
   }
 }
