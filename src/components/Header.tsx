@@ -24,6 +24,18 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const isAdminOrEditor = userSession && userSession.role !== 'VIEWER';
 
+  // Developer Secret Shortcut (5 clicks on title) to open config if needed
+  const [clickCount, setClickCount] = React.useState(0);
+  const handleTitleClick = () => {
+    const nextCount = clickCount + 1;
+    if (nextCount >= 5) {
+      setClickCount(0);
+      onOpenAppsScriptModal();
+    } else {
+      setClickCount(nextCount);
+    }
+  };
+
   return (
     <header className="relative bg-white text-slate-900 shadow-sm border-b border-slate-200">
       {/* Decorative Golden & Red Accent Line */}
@@ -35,24 +47,17 @@ export const Header: React.FC<HeaderProps> = ({
           {/* National/Front Banner */}
           <div className="flex items-center space-x-3.5 text-center md:text-left">
             <div>
-              <h1 className="font-anton text-xl sm:text-2xl tracking-wide text-red-950 leading-tight">
+              <h1
+                onClick={handleTitleClick}
+                className="font-anton text-xl sm:text-2xl tracking-wide text-red-950 leading-tight cursor-pointer select-none"
+                title="Hệ thống Liên lạc Ban Công tác Mặt trận 18 Khu phố"
+              >
                 HỆ THỐNG LIÊN LẠC BAN CÔNG TÁC MẶT TRẬN 18 KHU PHỐ <span className="whitespace-nowrap">PHƯỜNG BÌNH TIÊN</span>
               </h1>
               <p className="text-xs text-slate-600 mt-1 font-medium flex items-center justify-center md:justify-start gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-100 font-semibold uppercase text-[10px] tracking-wider">
                   <Layers className="w-3 h-3" /> 18 Khu Phố
                 </span>
-                
-                {/* Network status pill */}
-                {isOnline ? (
-                  <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold text-[10px] uppercase tracking-wider">
-                    <Wifi className="w-3 h-3 text-emerald-600" /> Trực tuyến (Online)
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-semibold text-[10px] uppercase tracking-wider animate-pulse">
-                    <WifiOff className="w-3 h-3 text-amber-700" /> Ngoại tuyến (Offline PWA)
-                  </span>
-                )}
               </p>
             </div>
           </div>
@@ -82,20 +87,6 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Apps Script Connection Modal Trigger */}
-            <button
-              onClick={onOpenAppsScriptModal}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
-                syncStatus.isConnected
-                  ? 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100'
-                  : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
-              }`}
-              title="Cấu hình Google Sheet / Apps Script"
-            >
-              <Database className="w-3.5 h-3.5 text-indigo-700" />
-              <span>{syncStatus.isConnected ? 'Đã lưu URL Sheet' : 'Kết nối Sheet'}</span>
-            </button>
-
             {/* Manual Refresh Button */}
             <button
               onClick={onRefreshData}
@@ -105,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                   : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
               }`}
-              title={isOnline ? "Cập nhật dữ liệu từ Google Sheet" : "Cần Internet để làm mới dữ liệu từ Google Sheet"}
+              title={isOnline ? "Cập nhật dữ liệu" : "Cần Internet để làm mới dữ liệu"}
             >
               <RefreshCw className={`w-4 h-4 ${syncStatus.isLoading ? 'animate-spin text-amber-600' : ''}`} />
             </button>

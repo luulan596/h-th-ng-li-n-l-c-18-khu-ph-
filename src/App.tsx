@@ -554,16 +554,6 @@ export default function App() {
         {/* Quick Action Toolbar */}
         {activeTab === 'LIST' && (
           <div className="flex flex-wrap items-center justify-end gap-2 mb-3.5">
-            {/* Import Excel Button */}
-            <button
-              onClick={() => setIsExcelModalOpen(true)}
-              className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-all active:scale-95"
-              title="Nhập dữ liệu từ file Excel (.xlsx, .xls, .csv)"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-200" />
-              <span>NHẬP EXCEL</span>
-            </button>
-
             {/* Export CSV Button */}
             <button
               onClick={handleExportCSV}
