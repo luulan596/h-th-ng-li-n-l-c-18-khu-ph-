@@ -23,7 +23,7 @@ function sanitizePersonnelInput(raw) {
   var chucDanhKhac = raw.chucDanhKhac || "";
   chucDanhKhac = String(chucDanhKhac).trim().substring(0, 200);
 
-  var khuPho = raw.khuPho || "Khu phố 1";
+  var khuPho = raw.khuPho ? String(raw.khuPho).trim() : "";
   khuPho = String(khuPho).trim().substring(0, 50);
 
   var stt = parseInt(raw.stt, 10);

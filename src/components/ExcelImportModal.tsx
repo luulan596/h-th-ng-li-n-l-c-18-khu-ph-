@@ -195,7 +195,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
           id: `excel-kp-${currentKhuPho.replace(/\D/g, '') || '1'}-${i}-${Math.random().toString(36).substr(2, 6)}`,
           stt: sttIdx !== -1 && !isNaN(Number(row[sttIdx])) ? Number(row[sttIdx]) : result.length + 1,
           hoTen: rawName,
-          khuPho: rowKhuPho || 'Khu phố 1',
+          khuPho: rowKhuPho || '',
           soDienThoai: rawPhone,
           phones: phones.length > 0 ? phones : undefined,
           chucDanhMatTran: chucDanhIdx !== -1 ? String(row[chucDanhIdx] || '').trim() : 'Thành viên',

@@ -59,7 +59,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
     const newPersonnel: Personnel = {
       id: editingPersonnel ? editingPersonnel.id : `kp_${Date.now()}`,
       stt: editingPersonnel ? editingPersonnel.stt : Math.floor(Math.random() * 100) + 1,
-      khuPho: formData.khuPho || 'Khu phố 1',
+      khuPho: formData.khuPho || '',
       hoTen: formData.hoTen || '',
       namSinhNam: formData.namSinhNam || '',
       namSinhNu: formData.namSinhNu || '',

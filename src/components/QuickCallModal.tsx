@@ -58,9 +58,11 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
             </div>
 
             <div>
-              <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-wider mb-1">
-                {personnel.khuPho}
-              </span>
+              {personnel.khuPho && (
+                <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-wider mb-1">
+                  {personnel.khuPho}
+                </span>
+              )}
               <h3 className="text-lg font-bold text-white leading-snug">
                 {personnel.hoTen}
               </h3>
