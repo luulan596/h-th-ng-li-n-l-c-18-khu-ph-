@@ -12,6 +12,7 @@ import { AuthModal } from './components/AuthModal';
 import { BottomNav } from './components/BottomNav';
 import { RedSitesView } from './components/RedSitesView';
 import { ExcelImportModal } from './components/ExcelImportModal';
+import { GrassrootsDemocracyView } from './components/GrassrootsDemocracyView';
 
 import { Personnel, FilterState, SyncStatus, Headquarters, RedSite } from './types';
 import { ADMINISTRATIVE_HEADQUARTERS, INITIAL_RED_SITES_DATA } from './data/initialData';
@@ -55,7 +56,7 @@ export default function App() {
   }, []);
 
   // --- UI View States ---
-  const [activeTab, setActiveTab] = useState<'LIST' | 'MAP' | 'RED_SITES' | 'NEWS' | 'STATS' | 'SETTINGS'>('LIST');
+  const [activeTab, setActiveTab] = useState<'LIST' | 'MAP' | 'RED_SITES' | 'NEWS' | 'FEEDBACK' | 'STATS' | 'SETTINGS'>('LIST');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
 
   // --- Headquarters State ---
@@ -697,6 +698,11 @@ export default function App() {
             onUpdateHeadquarters={(updated) => setHeadquartersList(updated)}
             webAppUrl={syncStatus.webAppUrl}
           />
+        )}
+
+        {/* Tab 4: Grassroots Democracy View (Hộp thư Dân chủ cơ sở) */}
+        {activeTab === 'FEEDBACK' && (
+          <GrassrootsDemocracyView />
         )}
 
         {/* Tab 4: Stats Mobile Tab */}
