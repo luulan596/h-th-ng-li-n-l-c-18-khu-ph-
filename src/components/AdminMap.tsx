@@ -211,6 +211,44 @@ export const AdminMap: React.FC<AdminMapProps> = ({
     return { wardAgencies: agencies, kpHeadquarters: kps };
   }, [hqItems]);
 
+  // Helper to fit map bounds to any given list of MapLocationItems
+  const fitBoundsForItems = (items: MapLocationItem[]) => {
+    setSelectedLocation(null);
+    if (mapInstanceRef.current && items.length > 0) {
+      const bounds = L.latLngBounds(items.map((item) => [item.toaDo.lat, item.toaDo.lng]));
+      mapInstanceRef.current.fitBounds(bounds, {
+        padding: [30, 30],
+        maxZoom: 16,
+        animate: true,
+        duration: 0.8,
+      });
+    }
+  };
+
+  // Handle Category selection change from top header buttons
+  const handleCategorySelect = (cat: string) => {
+    setSelectedCategory(cat);
+    setSelectedLocation(null);
+    const catFiltered = allLocationItems.filter((item) => {
+      if (selectedKhuPhoFilter && selectedKhuPhoFilter !== 'ALL') {
+        const kpMatch = item.khuPho === selectedKhuPhoFilter ||
+          item.title.toLowerCase().includes(selectedKhuPhoFilter.toLowerCase()) ||
+          item.shortLabel.toLowerCase() === selectedKhuPhoFilter.replace('Khu phố ', 'KP').toLowerCase();
+        if (!kpMatch && !item.isRedSite && item.loaiDiem !== 'KHU_PHO' && item.loaiTruSo !== 'khu_pho') {
+        } else if (!kpMatch) {
+          return false;
+        }
+      }
+
+      if (cat === 'ALL') return true;
+      if (cat === 'GOVERNMENT') return !item.isRedSite && (item.loaiDiem === 'CO_QUAN' || (item.loaiTruSo && item.loaiTruSo !== 'khu_pho'));
+      if (cat === 'KHU_PHO') return !item.isRedSite && (item.loaiDiem === 'KHU_PHO' || item.loaiTruSo === 'khu_pho');
+      if (cat === 'RED_SITES') return item.isRedSite;
+      return true;
+    });
+    fitBoundsForItems(catFiltered);
+  };
+
   // Handle Quick Jump selection from dropdown
   const handleQuickJumpChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
@@ -225,22 +263,34 @@ export const AdminMap: React.FC<AdminMapProps> = ({
       const { item, renderLat, renderLng } = foundRenderItem;
       setSelectedLocation(item);
       mapInstanceRef.current.flyTo([renderLat, renderLng], 17, { duration: 0.8 });
+    } else {
+      const item = allLocationItems.find((loc) => loc.id === selectedId);
+      if (item && mapInstanceRef.current) {
+        setSelectedLocation(item);
+        mapInstanceRef.current.flyTo([item.toaDo.lat, item.toaDo.lng], 17, { duration: 0.8 });
+      }
     }
   };
 
-  // Reset map view to full bounds based dynamically on all location items
+  // Reset map view to full bounds based dynamically on current category filtered items
   const handleResetView = () => {
-    setSelectedLocation(null);
-    if (mapInstanceRef.current && allLocationItems.length > 0) {
-      const bounds = L.latLngBounds(allLocationItems.map((item) => [item.toaDo.lat, item.toaDo.lng]));
-      mapInstanceRef.current.fitBounds(bounds, {
-        padding: [30, 30],
-        maxZoom: 16,
-        animate: true,
-        duration: 0.8,
-      });
-    }
+    fitBoundsForItems(filteredList);
   };
+
+  // Dynamic dropdown placeholder based on selected category
+  const dropdownPlaceholder = useMemo(() => {
+    switch (selectedCategory) {
+      case 'GOVERNMENT':
+        return '-- Chọn cơ quan Phường --';
+      case 'KHU_PHO':
+        return '-- Chọn Trụ sở Khu phố --';
+      case 'RED_SITES':
+        return '-- Chọn Địa chỉ đỏ --';
+      case 'ALL':
+      default:
+        return '-- Chọn cơ quan hoặc trụ sở --';
+    }
+  }, [selectedCategory]);
 
   // Handle marker overlap (e.g. KP12 & KP14 at 10.739932, 106.637962; KP13 & KP15 at 10.744097, 106.638407)
   // Calculate tiny rendering offsets so markers sharing exact lat,lng appear side-by-side without obscuring each other.
@@ -428,7 +478,7 @@ export const AdminMap: React.FC<AdminMapProps> = ({
         {/* Category Filters */}
         <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto no-scrollbar py-0.5 shrink-0">
           <button
-            onClick={() => setSelectedCategory('ALL')}
+            onClick={() => handleCategorySelect('ALL')}
             className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
               selectedCategory === 'ALL'
                 ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
@@ -438,7 +488,7 @@ export const AdminMap: React.FC<AdminMapProps> = ({
             Tất cả ({allLocationItems.length})
           </button>
           <button
-            onClick={() => setSelectedCategory('KHU_PHO')}
+            onClick={() => handleCategorySelect('KHU_PHO')}
             className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
               selectedCategory === 'KHU_PHO'
                 ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
@@ -448,7 +498,7 @@ export const AdminMap: React.FC<AdminMapProps> = ({
             <span>🏠 Trụ sở Khu phố</span>
           </button>
           <button
-            onClick={() => setSelectedCategory('GOVERNMENT')}
+            onClick={() => handleCategorySelect('GOVERNMENT')}
             className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
               selectedCategory === 'GOVERNMENT'
                 ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
@@ -458,7 +508,7 @@ export const AdminMap: React.FC<AdminMapProps> = ({
             <span>🏛️ Cơ quan Phường</span>
           </button>
           <button
-            onClick={() => setSelectedCategory('RED_SITES')}
+            onClick={() => handleCategorySelect('RED_SITES')}
             className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
               selectedCategory === 'RED_SITES'
                 ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
@@ -480,25 +530,59 @@ export const AdminMap: React.FC<AdminMapProps> = ({
 
         <div className="flex items-center gap-2 flex-1 max-w-full sm:max-w-xl">
           <select
-            value={selectedLocation && !selectedLocation.isRedSite ? selectedLocation.id : ''}
+            value={selectedLocation ? selectedLocation.id : ''}
             onChange={handleQuickJumpChange}
             className="w-full min-h-[44px] px-3 py-2 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs cursor-pointer truncate"
           >
-            <option value="">-- Chọn cơ quan hoặc trụ sở... --</option>
-            <optgroup label="🏛️ CƠ QUAN PHƯỜNG">
-              {wardAgencies.map((agency) => (
+            <option value="">{dropdownPlaceholder}</option>
+            {selectedCategory === 'ALL' && (
+              <>
+                <optgroup label="🏛️ CƠ QUAN PHƯỜNG">
+                  {wardAgencies.map((agency) => (
+                    <option key={agency.id} value={agency.id}>
+                      {agency.title}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🏠 TRỤ SỞ KHU PHỐ">
+                  {kpHeadquarters.map((kp) => (
+                    <option key={kp.id} value={kp.id}>
+                      {kp.title}
+                    </option>
+                  ))}
+                </optgroup>
+                {redSiteItems.length > 0 && (
+                  <optgroup label="⭐ ĐỊA CHỈ ĐỎ">
+                    {redSiteItems.map((site) => (
+                      <option key={site.id} value={site.id}>
+                        {site.title}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </>
+            )}
+            {selectedCategory === 'GOVERNMENT' && (
+              wardAgencies.map((agency) => (
                 <option key={agency.id} value={agency.id}>
                   {agency.title}
                 </option>
-              ))}
-            </optgroup>
-            <optgroup label="🏠 TRỤ SỞ KHU PHỐ">
-              {kpHeadquarters.map((kp) => (
+              ))
+            )}
+            {selectedCategory === 'KHU_PHO' && (
+              kpHeadquarters.map((kp) => (
                 <option key={kp.id} value={kp.id}>
                   {kp.title}
                 </option>
-              ))}
-            </optgroup>
+              ))
+            )}
+            {selectedCategory === 'RED_SITES' && (
+              redSiteItems.map((site) => (
+                <option key={site.id} value={site.id}>
+                  {site.title}
+                </option>
+              ))
+            )}
           </select>
 
           <button
