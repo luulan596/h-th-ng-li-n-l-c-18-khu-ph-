@@ -102,9 +102,11 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
 
           {/* Badges Row: Khu phố, Cấp ủy, Chức danh khác */}
           <div className="flex flex-wrap items-center gap-1 mt-2">
-            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded border border-indigo-100 uppercase tracking-wider">
-              {personnel.khuPho}
-            </span>
+            {personnel.khuPho && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded border border-indigo-100 uppercase tracking-wider">
+                {personnel.khuPho}
+              </span>
+            )}
             {isParty && (
               <span className="text-[9px] font-bold px-1.5 py-0.5 bg-red-100 text-red-800 rounded border border-red-200 uppercase tracking-wider">
                 Cấp ủy

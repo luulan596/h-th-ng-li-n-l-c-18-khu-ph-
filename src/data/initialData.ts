@@ -896,7 +896,7 @@ function doGet(e) {
       chucDanhKhac: chucDanhKhacStr,
       diaChi: row[6] || "",
       soDienThoai: rawPhone,
-      khuPho: row[8] || "Khu phố 1",
+      khuPho: row[8] || "",
       isCapUy: chucDanhKhacStr.toLowerCase().indexOf("bí thư") !== -1 || chucDanhKhacStr.toLowerCase().indexOf("cấp ủy") !== -1
     });
   }
@@ -927,7 +927,7 @@ function doPost(e) {
         item.chucDanhKhac || "",
         item.diaChi || "",
         phoneStr,
-        item.khuPho || "Khu phố 1"
+        item.khuPho || ""
       ]);
       return createJsonResponse({ status: "success", message: "Đã thêm thành công vào Google Sheet" });
     }
@@ -955,7 +955,7 @@ function doPost(e) {
           item.chucDanhKhac || "",
           item.diaChi || "",
           phoneVal,
-          item.khuPho || "Khu phố 1"
+          item.khuPho || ""
         ]]);
         return createJsonResponse({ status: "success", message: "Đã cập nhật dòng trong Google Sheet" });
       } else {
@@ -970,7 +970,7 @@ function doPost(e) {
           item.chucDanhKhac || "",
           item.diaChi || "",
           pVal,
-          item.khuPho || "Khu phố 1"
+          item.khuPho || ""
         ]);
         return createJsonResponse({ status: "success", message: "Đã thêm mới do không tìm thấy dòng cần sửa" });
       }
@@ -1004,7 +1004,7 @@ function doPost(e) {
           p.chucDanhKhac || "",
           p.diaChi || "",
           p.soDienThoai ? "'" + String(p.soDienThoai).trim() : "",
-          p.khuPho || "Khu phố 1"
+          p.khuPho || ""
         ]);
       }
       return createJsonResponse({ status: "success", message: "Đã đồng bộ toàn bộ danh sách lên Google Sheet" });

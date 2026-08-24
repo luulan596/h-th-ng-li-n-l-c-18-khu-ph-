@@ -94,7 +94,7 @@ function getPersonnelRecords() {
       chucDanhKhac: row[5] ? String(row[5]).trim() : "",
       diaChi: row[6] ? String(row[6]).trim() : "",
       soDienThoai: phoneStr,
-      khuPho: row[8] ? String(row[8]).trim() : "Khu phố 1",
+      khuPho: row[8] ? String(row[8]).trim() : "",
       isCapUy: checkIsCapUy(row[4], row[5])
     });
   }

@@ -149,9 +149,13 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
 
                     {/* Khu phố */}
                     <td className="py-3 px-3 font-semibold text-slate-800">
-                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100 uppercase">
-                        {p.khuPho}
-                      </span>
+                      {p.khuPho ? (
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100 uppercase">
+                          {p.khuPho}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-normal text-[11px]">-</span>
+                      )}
                     </td>
 
                     {/* Phone Number & Direct Actions */}
