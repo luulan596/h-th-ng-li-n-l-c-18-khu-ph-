@@ -113,6 +113,38 @@ export default function App() {
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
 
   const [searchParams] = useSearchParams();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // --- Initial Data Fetch from Supabase ---
+  useEffect(() => {
+    const loadAllData = async () => {
+      setIsInitialLoading(true);
+      try {
+        // Fetch in parallel for better performance
+        const [personnel, headquarters, redSites] = await Promise.all([
+          fetchAllPersonnel(),
+          fetchAllHeadquarters(),
+          fetchAllRedSites()
+        ]);
+
+        if (personnel && personnel.length > 0) {
+          setPersonnelList(personnel);
+        }
+        if (headquarters && headquarters.length > 0) {
+          setHeadquartersList(headquarters);
+        }
+        if (redSites && redSites.length > 0) {
+          setRedSitesList(redSites);
+        }
+      } catch (error) {
+        console.error('[App] Lỗi khi đồng bộ dữ liệu từ Supabase:', error);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    loadAllData();
+  }, []);
 
   // --- Deep Link Handling (?kp=...&nganh=...&tab=...) ---
   useEffect(() => {
@@ -431,6 +463,13 @@ export default function App() {
           totalPersonnel={personnelList.length}
           totalKhuPho={18}
         />
+      )}
+
+      {isInitialLoading && (
+        <div className="bg-indigo-50 border-b border-indigo-100 py-2 px-4 flex items-center justify-center gap-3">
+          <RefreshCw className="w-4 h-4 text-indigo-600 animate-spin" />
+          <span className="text-xs font-medium text-indigo-700">Đang đồng bộ dữ liệu từ hệ thống trung tâm...</span>
+        </div>
       )}
 
       {/* Main Responsive Body Container */}
