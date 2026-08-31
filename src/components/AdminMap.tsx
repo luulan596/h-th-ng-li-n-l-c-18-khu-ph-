@@ -39,14 +39,14 @@ export const AdminMap: React.FC<AdminMapProps> = ({
   }));
 
   // Counts
-  const govCount = headquartersList.filter((hq) => ['ubnd', 'mat_tran', 'cong_an', 'quan_su', 'y_te'].includes(hq.loaiTruSo)).length;
+  const govCount = headquartersList.filter((hq) => hq.loaiTruSo !== 'khu_pho').length;
   const kpCount = headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho').length;
-  const totalCount = headquartersList.length + redSitesList.length;
+  const totalCount = govCount + kpCount + redSitesList.length;
 
   // Combined or filtered list based on category
   const filteredList = (() => {
     if (selectedCategory === 'ALL') return [...headquartersList, ...redSiteHqs];
-    if (selectedCategory === 'GOVERNMENT') return headquartersList.filter((hq) => ['ubnd', 'mat_tran', 'cong_an', 'quan_su', 'y_te'].includes(hq.loaiTruSo));
+    if (selectedCategory === 'GOVERNMENT') return headquartersList.filter((hq) => hq.loaiTruSo !== 'khu_pho');
     if (selectedCategory === 'KHU_PHO') return headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho');
     if (selectedCategory === 'RED_SITES') return redSiteHqs;
     return headquartersList.filter((hq) => hq.loaiTruSo === selectedCategory);
@@ -154,11 +154,9 @@ export const AdminMap: React.FC<AdminMapProps> = ({
         zoomControl: true,
       });
 
-      // Use CartoDB Voyager tiles for better stability and modern look
-      // It avoids the DNS issues sometimes found with OSM subdomains
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
+      // Use OpenStreetMap France tiles for better look and stability
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap France contributors',
         maxZoom: 20
       }).addTo(map);
 
@@ -409,17 +407,18 @@ export const AdminMap: React.FC<AdminMapProps> = ({
               </div>
             )}
 
-            {/* Main Action Button - Directions Only */}
+            {/* Main Action Button - Directions using Coordinates */}
             <div className="pt-0.5">
-              <a
-                href={getGoogleMapsDirLink(selectedHq.diaChi)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => {
+                  const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedHq.toaDo.lat},${selectedHq.toaDo.lng}`;
+                  window.open(url, '_blank');
+                }}
                 className="w-full min-h-[36px] py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all"
               >
                 <Navigation className="w-3.5 h-3.5 fill-slate-950" />
                 <span>CHỈ ĐƯỜNG ĐẾN VỊ TRÍ</span>
-              </a>
+              </button>
             </div>
 
           </div>
