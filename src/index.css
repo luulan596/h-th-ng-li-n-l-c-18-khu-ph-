@@ -43,7 +43,7 @@
 }
 
 .leaflet-container {
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif !important;
+  font-family: inherit !important;
   z-index: 10 !important;
 }
 
