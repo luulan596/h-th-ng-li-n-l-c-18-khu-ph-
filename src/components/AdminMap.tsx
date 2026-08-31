@@ -154,11 +154,18 @@ export const AdminMap: React.FC<AdminMapProps> = ({
         zoomControl: true,
       });
 
-      // Add OpenStreetMap tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19,
+      // Use CartoDB Voyager tiles for better stability and modern look
+      // It avoids the DNS issues sometimes found with OSM subdomains
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
       }).addTo(map);
+
+      // Force map to recalculate size after mount to prevent gray/broken layout
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 500);
 
       mapInstanceRef.current = map;
     }
@@ -192,7 +199,36 @@ export const AdminMap: React.FC<AdminMapProps> = ({
       map.fitBounds(bounds, { padding: [35, 35], maxZoom: 16 });
     }
 
+    // Always invalidate size when the list changes or component updates
+    // specifically useful when switching tabs in the parent component
+    map.invalidateSize();
+
   }, [filteredList, selectedHq?.id]);
+
+  // Robust handling for container resizing and visibility changes
+  useEffect(() => {
+    if (!mapContainerRef.current || !mapInstanceRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+
+    resizeObserver.observe(mapContainerRef.current);
+    
+    // Initial delay poke for slow parent transitions
+    const timer = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 1000);
+
+    return () => {
+      resizeObserver.disconnect();
+      clearTimeout(timer);
+    };
+  }, [mapInstanceRef.current]);
 
   return (
     <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden my-3">
