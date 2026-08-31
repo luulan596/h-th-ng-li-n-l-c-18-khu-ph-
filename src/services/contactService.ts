@@ -21,22 +21,29 @@ export async function fetchAllPersonnel(): Promise<Personnel[]> {
   
   if (supabase) {
     try {
+      console.log('[ContactService] Đang tải dữ liệu từ bảng: danh-ba');
       const { data, error } = await supabase
-        .from('contacts')
+        .from('danh-ba')
         .select('*')
         .order('stt', { ascending: true });
 
-      if (!error && data && data.length > 0) {
-        // Map trường từ snake_case của database sang camelCase của frontend nếu cần
+      if (error) {
+        console.error('[ContactService] Lỗi khi truy vấn Supabase:', error.message, error.details);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        console.log(`[ContactService] Đã tải thành công ${data.length} bản ghi nhân sự.`);
+        // Map trường từ snake_case của database sang camelCase của frontend
         const mappedData: Personnel[] = data.map((item: any) => ({
           id: item.id || `p-${item.stt || Math.random()}`,
           stt: item.stt || 0,
-          khuPho: item.khu_pho || item.khuPho || 'Khu phố 1',
+          khuPho: item.khu_pho || item.khuPho || '',
           hoTen: item.ho_ten || item.hoTen || '',
           namSinhNam: item.nam_sinh_nam || item.namSinhNam || '',
           namSinhNu: item.nam_sinh_nu || item.namSinhNu || '',
-          gender: item.gender || (item.nam_sinh_nam ? 'Nam' : item.nam_sinh_nu ? 'Nữ' : ''),
-          birthYear: item.birth_year || (item.nam_sinh_nam || item.nam_sinh_nu || ''),
+          gender: item.gioi_tinh || item.gender || (item.nam_sinh_nam ? 'Nam' : item.nam_sinh_nu ? 'Nữ' : ''),
+          birthYear: item.nam_sinh_nam || item.nam_sinh_nu || item.birth_year || '',
           chucDanhMatTran: item.chuc_danh_mat_tran || item.chucDanhMatTran || 'Thành viên',
           chucDanhKhac: item.chuc_danh_khac || item.chucDanhKhac || '',
           diaChi: item.dia_chi || item.diaChi || '',
@@ -46,12 +53,13 @@ export async function fetchAllPersonnel(): Promise<Personnel[]> {
           dataWarning: item.data_warning || item.dataWarning || '',
         }));
 
-        // Lưu cache lại local
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mappedData));
         return mappedData;
+      } else {
+        console.warn('[ContactService] Bảng danh-ba rỗng hoặc không có dữ liệu.');
       }
-    } catch (err) {
-      console.warn('[ContactService] Lỗi kết nối Supabase, chuyển sang cache local:', err);
+    } catch (err: any) {
+      console.error('[ContactService] Exception khi fetch data:', err.message || err);
     }
   }
 
@@ -188,6 +196,7 @@ export async function savePersonnel(person: Personnel): Promise<{ success: boole
         ho_ten: person.hoTen,
         nam_sinh_nam: person.namSinhNam || null,
         nam_sinh_nu: person.namSinhNu || null,
+        gioi_tinh: person.gender || (person.namSinhNam ? 'Nam' : person.namSinhNu ? 'Nữ' : null),
         chuc_danh_mat_tran: person.chucDanhMatTran,
         chuc_danh_khac: person.chucDanhKhac,
         dia_chi: person.diaChi,
@@ -196,26 +205,35 @@ export async function savePersonnel(person: Personnel): Promise<{ success: boole
         ghi_chu: person.ghiChu,
       };
 
+      console.log('[ContactService] Đang lưu dữ liệu cán bộ:', person.hoTen);
+
       if (person.id && !person.id.startsWith('temp-') && !person.id.startsWith('btt-') && !person.id.startsWith('kp')) {
         const { data, error } = await supabase
-          .from('contacts')
+          .from('danh-ba')
           .update(dbPayload)
           .eq('id', person.id)
           .select()
           .single();
-        if (error) throw error;
+        if (error) {
+          console.error('[ContactService] Lỗi khi UPDATE:', error.message);
+          throw error;
+        }
         return { success: true, data };
       } else {
         const { data, error } = await supabase
-          .from('contacts')
+          .from('danh-ba')
           .insert([dbPayload])
           .select()
           .single();
-        if (error) throw error;
+        if (error) {
+          console.error('[ContactService] Lỗi khi INSERT:', error.message);
+          throw error;
+        }
         return { success: true, data };
       }
-    } catch (err) {
-      console.warn('[ContactService] Lỗi lưu Supabase:', err);
+    } catch (err: any) {
+      console.error('[ContactService] Lỗi nghiêm trọng khi lưu dữ liệu:', err.message || err);
+      return { success: false, error: err };
     }
   }
 
@@ -230,10 +248,16 @@ export async function deletePersonnel(id: string): Promise<boolean> {
   const supabase = getSupabase();
   if (supabase) {
     try {
-      const { error } = await supabase.from('contacts').delete().eq('id', id);
-      if (!error) return true;
-    } catch (e) {
-      console.warn('[ContactService] Lỗi xóa bản ghi trên Supabase:', e);
+      console.log('[ContactService] Đang xóa cán bộ có ID:', id);
+      const { error } = await supabase.from('danh-ba').delete().eq('id', id);
+      if (error) {
+        console.error('[ContactService] Lỗi khi DELETE:', error.message);
+        throw error;
+      }
+      return true;
+    } catch (e: any) {
+      console.error('[ContactService] Lỗi xóa bản ghi trên Supabase:', e.message || e);
+      return false;
     }
   }
   return true;

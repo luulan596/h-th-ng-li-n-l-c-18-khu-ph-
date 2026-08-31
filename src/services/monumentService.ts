@@ -62,12 +62,19 @@ export async function fetchAllRedSites(): Promise<RedSite[]> {
 
   if (supabase) {
     try {
+      console.log('[MonumentService] Đang tải dữ liệu từ bảng: diachido');
       const { data, error } = await supabase
-        .from('red_addresses')
+        .from('diachido')
         .select('*')
         .order('id', { ascending: true });
 
-      if (!error && data && data.length > 0) {
+      if (error) {
+        console.error('[MonumentService] Lỗi khi truy vấn diachido:', error.message);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        console.log(`[MonumentService] Đã tải thành công ${data.length} địa chỉ đỏ.`);
         const mapped: RedSite[] = data.map((item: any) => ({
           id: item.id || `red-${Math.random()}`,
           name: item.name || item.ten_di_tich || '',
@@ -93,9 +100,11 @@ export async function fetchAllRedSites(): Promise<RedSite[]> {
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
         return mapped;
+      } else {
+        console.warn('[MonumentService] Bảng diachido rỗng.');
       }
-    } catch (err) {
-      console.warn('[MonumentService] Lỗi kết nối Supabase, chuyển sang cache local:', err);
+    } catch (err: any) {
+      console.error('[MonumentService] Exception fetchAllRedSites:', err.message || err);
     }
   }
 
@@ -162,10 +171,16 @@ export async function saveRedSite(site: RedSite): Promise<boolean> {
         is_featured: site.isFeatured,
       };
 
-      await supabase.from('red_addresses').upsert({ id: site.id, ...payload });
+      console.log('[MonumentService] Đang lưu địa chỉ đỏ:', site.name);
+      const { error } = await supabase.from('diachido').upsert({ id: site.id, ...payload });
+      if (error) {
+        console.error('[MonumentService] Lỗi khi upsert diachido:', error.message);
+        throw error;
+      }
       return true;
-    } catch (e) {
-      console.warn('[MonumentService] Lỗi lưu Supabase:', e);
+    } catch (e: any) {
+      console.error('[MonumentService] Lỗi lưu Supabase:', e.message || e);
+      return false;
     }
   }
 

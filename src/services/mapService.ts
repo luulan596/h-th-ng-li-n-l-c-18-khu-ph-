@@ -21,12 +21,19 @@ export async function fetchAllHeadquarters(): Promise<Headquarters[]> {
 
   if (supabase) {
     try {
+      console.log('[MapService] Đang tải dữ liệu từ bảng: toadotruso');
       const { data, error } = await supabase
-        .from('headquarters')
+        .from('toadotruso')
         .select('*')
         .order('id', { ascending: true });
 
-      if (!error && data && data.length > 0) {
+      if (error) {
+        console.error('[MapService] Lỗi khi truy vấn toadotruso:', error.message);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        console.log(`[MapService] Đã tải thành công ${data.length} điểm tọa độ trụ sở.`);
         const mapped: Headquarters[] = data.map((item: any) => ({
           id: item.id || `hq-${Math.random()}`,
           tenTruSo: item.ten_tru_so || item.tenTruSo || '',
@@ -46,9 +53,11 @@ export async function fetchAllHeadquarters(): Promise<Headquarters[]> {
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
         return mapped;
+      } else {
+        console.warn('[MapService] Bảng toadotruso rỗng.');
       }
-    } catch (err) {
-      console.warn('[MapService] Lỗi kết nối Supabase, chuyển sang cache local:', err);
+    } catch (err: any) {
+      console.error('[MapService] Exception fetchAllHeadquarters:', err.message || err);
     }
   }
 
@@ -115,10 +124,16 @@ export async function saveHeadquarters(headquarters: Headquarters): Promise<bool
         mo_ta_chuc_nang: headquarters.moTaChucNang,
       };
 
-      await supabase.from('headquarters').upsert({ id: headquarters.id, ...payload });
+      console.log('[MapService] Đang cập nhật tọa độ cho:', headquarters.tenTruSo);
+      const { error } = await supabase.from('toadotruso').upsert({ id: headquarters.id, ...payload });
+      if (error) {
+        console.error('[MapService] Lỗi khi upsert toadotruso:', error.message);
+        throw error;
+      }
       return true;
-    } catch (e) {
-      console.warn('[MapService] Lỗi cập nhật tọa độ trên Supabase:', e);
+    } catch (e: any) {
+      console.error('[MapService] Lỗi cập nhật tọa độ trên Supabase:', e.message || e);
+      return false;
     }
   }
 
