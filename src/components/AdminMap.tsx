@@ -108,30 +108,38 @@ export const AdminMap: React.FC<AdminMapProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    // 1. Initialize map if not already created
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [10.7490, 106.6500],
-        zoom: 15,
+        center: [10.7485, 106.6521], // Center of Ward Binh Tien
+        zoom: 16,
         zoomControl: true,
       });
 
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
+      // 2. Standard OpenStreetMap Tile Layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
+        subdomains: ['a', 'b', 'c']
       }).addTo(map);
 
-      setTimeout(() => map.invalidateSize(), 500);
+      // 3. Initial invalidateSize call to ensure proper rendering
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 500);
+
       mapInstanceRef.current = map;
     }
 
     const map = mapInstanceRef.current;
     
-    // Clear existing markers
+    // Clear existing markers before re-rendering
     Object.values(markersRef.current).forEach((marker: L.Marker) => marker.remove());
     markersRef.current = {};
 
     const bounds = L.latLngBounds([]);
 
+    // 4. Add markers for filtered locations
     filteredList.forEach((hq) => {
       const isSelected = selectedHq?.id === hq.id;
       const icon = createCustomIcon(hq, isSelected);
@@ -140,20 +148,39 @@ export const AdminMap: React.FC<AdminMapProps> = ({
 
       marker.on('click', () => {
         setSelectedHq(hq);
-        map.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 0.6 });
+        map.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 0.8 });
       });
 
       bounds.extend([hq.toaDo.lat, hq.toaDo.lng]);
       markersRef.current[hq.id] = marker;
     });
 
+    // 5. Fit bounds if showing a filtered set (but no specific HQ selected)
     if (bounds.isValid() && filteredList.length > 0 && !selectedHq) {
-      map.fitBounds(bounds, { padding: [35, 35], maxZoom: 16 });
+      map.fitBounds(bounds, { padding: [35, 35], maxZoom: 17 });
     }
 
+    // Always invalidate size on list changes
     map.invalidateSize();
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      // We don't remove the map instance here to keep it alive for tab switching 
+      // but we ensure it's resized correctly
+    };
   }, [filteredList, selectedHq?.id]);
 
+  // Handle unmount - absolute cleanup
+  useEffect(() => {
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Sync with external Khu phố filter
   useEffect(() => {
     if (!mapInstanceRef.current || !selectedKhuPhoFilter || selectedKhuPhoFilter === 'ALL') return;
     
@@ -164,9 +191,9 @@ export const AdminMap: React.FC<AdminMapProps> = ({
     
     if (hq) {
       setSelectedHq(hq);
-      mapInstanceRef.current.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 1 });
+      mapInstanceRef.current.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 1.2 });
     }
-  }, [selectedKhuPhoFilter]);
+  }, [selectedKhuPhoFilter, headquartersList]);
 
   useEffect(() => {
     if (!mapContainerRef.current || !mapInstanceRef.current) return;
