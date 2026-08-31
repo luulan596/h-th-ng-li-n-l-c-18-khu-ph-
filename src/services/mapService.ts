@@ -32,22 +32,22 @@ export async function fetchAllHeadquarters(): Promise<Headquarters[]> {
       }
 
       if (data && data.length > 0) {
-        console.log(`[MapService] Đã tải thành công ${data.length} điểm tọa độ trụ sở.`);
+        console.log(`[MapService] Đã tải thành công ${data.length} điểm từ toadotruso.`);
         const mapped: Headquarters[] = data.map((item: any) => ({
-          id: item.id || `hq-${Math.random()}`,
-          tenTruSo: item.ten_tru_so || item.tenTruSo || '',
-          loaiTruSo: item.loai_tru_so || item.loaiTruSo || 'khu_pho',
-          khuPhoThuocVong: item.khu_pho_thuoc_vong || item.khuPhoThuocVong || '',
-          diaChi: item.dia_chi || item.diaChi || '',
-          soDienThoai: item.so_dien_thoai || item.soDienThoai || '',
-          gioLamViec: item.gio_lam_viec || item.gioLamViec || '07:30 - 17:00 (Thứ 2 - Thứ 6)',
-          canBoPhuTrach: item.can_bo_phu_trach || item.canBoPhuTrach || '',
-          chucVuCanBo: item.chuc_vu_can_bo || item.chucVuCanBo || '',
+          id: item.ma_tru_so || item.id || `hq-${Math.random()}`,
+          tenTruSo: item.ten_tru_so || '',
+          loaiTruSo: item.loai_diem === 'CO_QUAN' ? 'CO_QUAN' : (item.loai_diem === 'KHU_PHO' ? 'khu_pho' : item.loai_diem),
+          khuPhoThuocVong: item.khu_pho || item.khu_pho_thuoc_vong || '',
+          diaChi: item.dia_chi || '',
+          soDienThoai: item.so_dien_thoai || '',
+          gioLamViec: item.gio_lam_viec || '07:30 - 17:00 (Thứ 2 - Thứ 6)',
+          canBoPhuTrach: item.can_bo_phu_trach || '',
+          chucVuCanBo: item.chuc_vu_can_bo || '',
           toaDo: {
-            lat: Number(item.lat || item.toaDo?.lat || 10.748),
-            lng: Number(item.lng || item.toaDo?.lng || 106.650),
+            lat: Number(item.latitude || item.lat || 10.748),
+            lng: Number(item.longitude || item.lng || 106.650),
           },
-          moTaChucNang: item.mo_ta_chuc_nang || item.moTaChucNang || '',
+          moTaChucNang: item.mo_ta_chuc_nang || '',
         }));
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
@@ -110,21 +110,22 @@ export async function saveHeadquarters(headquarters: Headquarters): Promise<bool
   if (supabase) {
     try {
       const payload = {
+        ma_tru_so: headquarters.id,
         ten_tru_so: headquarters.tenTruSo,
-        loai_tru_so: headquarters.loaiTruSo,
-        khu_pho_thuoc_vong: headquarters.khuPhoThuocVong,
+        loai_diem: headquarters.loaiTruSo === 'CO_QUAN' ? 'CO_QUAN' : (headquarters.loaiTruSo === 'khu_pho' ? 'KHU_PHO' : headquarters.loaiTruSo),
+        khu_pho: headquarters.khuPhoThuocVong,
         dia_chi: headquarters.diaChi,
         so_dien_thoai: headquarters.soDienThoai,
         gio_lam_viec: headquarters.gioLamViec,
         can_bo_phu_trach: headquarters.canBoPhuTrach,
         chuc_vu_can_bo: headquarters.chucVuCanBo,
-        lat: headquarters.toaDo.lat,
-        lng: headquarters.toaDo.lng,
+        latitude: headquarters.toaDo.lat,
+        longitude: headquarters.toaDo.lng,
         mo_ta_chuc_nang: headquarters.moTaChucNang,
       };
 
       console.log('[MapService] Đang cập nhật tọa độ cho:', headquarters.tenTruSo);
-      const { error } = await supabase.from('toadotruso').upsert({ id: headquarters.id, ...payload });
+      const { error } = await supabase.from('toadotruso').upsert(payload, { onConflict: 'ma_tru_so' });
       if (error) {
         console.error('[MapService] Lỗi khi upsert toadotruso:', error.message);
         throw error;

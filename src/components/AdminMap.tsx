@@ -39,14 +39,14 @@ export const AdminMap: React.FC<AdminMapProps> = ({
   }));
 
   // Counts
-  const govCount = headquartersList.filter((hq) => hq.loaiTruSo !== 'khu_pho').length;
+  const govCount = headquartersList.filter((hq) => hq.loaiTruSo === 'CO_QUAN').length;
   const kpCount = headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho').length;
   const totalCount = govCount + kpCount + redSitesList.length;
 
   // Combined or filtered list based on category
   const filteredList = (() => {
     if (selectedCategory === 'ALL') return [...headquartersList, ...redSiteHqs];
-    if (selectedCategory === 'GOVERNMENT') return headquartersList.filter((hq) => hq.loaiTruSo !== 'khu_pho');
+    if (selectedCategory === 'GOVERNMENT') return headquartersList.filter((hq) => hq.loaiTruSo === 'CO_QUAN');
     if (selectedCategory === 'KHU_PHO') return headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho');
     if (selectedCategory === 'RED_SITES') return redSiteHqs;
     return headquartersList.filter((hq) => hq.loaiTruSo === selectedCategory);
@@ -374,9 +374,16 @@ export const AdminMap: React.FC<AdminMapProps> = ({
             </div>
 
             {/* Address Row */}
-            <div className="flex items-start gap-1.5 text-[11px] font-semibold text-slate-700 pb-1.5 mb-1.5 border-b border-slate-100">
-              <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-              <span className="leading-snug">{selectedHq.diaChi}</span>
+            <div className="flex flex-col gap-1 text-[11px] font-semibold text-slate-700 pb-1.5 mb-1.5 border-b border-slate-100">
+              <div className="flex items-start gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                <span className="leading-snug">{selectedHq.diaChi}</span>
+              </div>
+              {selectedHq.khuPhoThuocVong && (
+                <div className="flex items-center gap-1.5 ml-5 text-slate-500 font-bold uppercase tracking-wider text-[9px]">
+                  <span>{selectedHq.khuPhoThuocVong}</span>
+                </div>
+              )}
             </div>
 
             {/* Officer & Contact Details (If available) */}
