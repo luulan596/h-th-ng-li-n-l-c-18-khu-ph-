@@ -25,7 +25,7 @@ export async function fetchAllPersonnel(): Promise<Personnel[]> {
       const { data, error } = await supabase
         .from('danh-ba')
         .select('*')
-        .order('stt', { ascending: true });
+        .order('id', { ascending: true });
 
       if (error) {
         console.error('[ContactService] Lỗi khi truy vấn Supabase:', error.message, error.details);

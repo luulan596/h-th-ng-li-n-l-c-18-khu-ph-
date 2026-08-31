@@ -24,8 +24,7 @@ export async function fetchAllHeadquarters(): Promise<Headquarters[]> {
       console.log('[MapService] Đang tải dữ liệu từ bảng: toadotruso');
       const { data, error } = await supabase
         .from('toadotruso')
-        .select('*')
-        .order('id', { ascending: true });
+        .select('*');
 
       if (error) {
         console.error('[MapService] Lỗi khi truy vấn toadotruso:', error.message);
