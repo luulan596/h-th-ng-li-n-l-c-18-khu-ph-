@@ -71,6 +71,22 @@ export interface NewsItem {
   isFeatured?: boolean;
 }
 
+export interface CitizenFeedback {
+  id: string;
+  senderName: string;
+  isAnonymous: boolean;
+  phone?: string;
+  email?: string;
+  khuPho: string;
+  category: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  status: 'da_tiep_nhan' | 'dang_xu_ly' | 'da_giai_quyet';
+}
+
+export type TabType = 'LIST' | 'FEEDBACK' | 'RED_SITES' | 'MAP' | 'STATS' | 'SETTINGS' | 'NEWS';
+
 export interface FilterState {
   searchQuery: string;
   selectedKhuPho: string;

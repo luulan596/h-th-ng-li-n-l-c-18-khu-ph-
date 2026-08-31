@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Headquarters, HeadquartersType, RedSite } from '../types';
-import { Navigation, MapPin, Landmark, Phone, Clock, User, Info, X } from 'lucide-react';
-import { getGoogleMapsDirLink } from '../utils/helpers';
+import { Navigation, MapPin, Landmark, Phone, User, ChevronDown } from 'lucide-react';
+import { getGoogleMapsDirLink, formatPhoneNumber } from '../utils/helpers';
 
 interface AdminMapProps {
   headquartersList: Headquarters[];
@@ -12,401 +12,144 @@ interface AdminMapProps {
   webAppUrl?: string;
 }
 
-// Data wrapper structure to unify Headquarters and RedSite for map rendering
-interface MapLocationItem {
-  id: string;
-  isRedSite: boolean;
-  rawHeadquarters?: Headquarters;
-  rawRedSite?: RedSite;
-  title: string;
-  shortLabel: string;
-  popupHeaderTitle: string;
-  category: string;
-  khuPho?: string;
-  address: string;
-  phone?: string;
-  hours?: string;
-  officerName?: string;
-  officerRole?: string;
-  summary?: string;
-  ticketPrice?: string;
-  toaDo: {
-    lat: number;
-    lng: number;
-  };
-  loaiDiem?: string;
-  loaiTruSo?: HeadquartersType;
-}
-
 export const AdminMap: React.FC<AdminMapProps> = ({
   headquartersList,
   redSitesList = [],
-  selectedKhuPhoFilter = 'ALL',
+  selectedKhuPhoFilter,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
 
-  const [selectedLocation, setSelectedLocation] = useState<MapLocationItem | null>(null);
+  const [selectedHq, setSelectedHq] = useState<Headquarters | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  // Helper to extract short badge label (KP1..KP18, UBND, MTTQ, CA, QS, YT)
-  const getHqShortLabel = (hq: Headquarters): string => {
-    if (hq.loaiDiem === 'CO_QUAN') {
-      const idUpper = (hq.id || '').toUpperCase();
-      if (idUpper.includes('UBND')) return 'UBND';
-      if (idUpper.includes('MTTQ')) return 'MTTQ';
-      if (idUpper.includes('CA') || idUpper.includes('CONG_AN')) return 'CA';
-      if (idUpper.includes('QS') || idUpper.includes('QUAN_SU')) return 'QS';
-      if (idUpper.includes('YT') || idUpper.includes('Y_TE')) return 'YT';
-      return hq.id || 'CƠ QUAN';
-    }
+  // Convert red sites to Headquarters-compatible structure for the map if RED_SITES or ALL
+  const redSiteHqs: Headquarters[] = redSitesList.map((site) => ({
+    id: site.id,
+    tenTruSo: `🚩 ${site.name}`,
+    loaiTruSo: 'ubnd',
+    diaChi: site.address,
+    soDienThoai: '',
+    gioLamViec: site.openHours || 'Tất cả các ngày trong tuần',
+    canBoPhuTrach: site.category,
+    chucVuCanBo: 'Di tích Lịch sử',
+    toaDo: site.toaDo,
+    moTaChucNang: site.summary,
+  }));
 
-    // Extract KP number from khuPho, khuPhoThuocVong, id, or tenTruSo
-    const source = hq.khuPho || hq.khuPhoThuocVong || hq.id || hq.tenTruSo;
-    const match = source.match(/(?:KP|Khu\s*phố)\s*0*(\d+)/i);
-    if (match && match[1]) {
-      return `KP${parseInt(match[1], 10)}`;
-    }
+  // Counts
+  const govCount = headquartersList.filter((hq) => ['ubnd', 'mat_tran', 'cong_an', 'quan_su', 'y_te'].includes(hq.loaiTruSo)).length;
+  const kpCount = headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho').length;
+  const totalCount = headquartersList.length + redSitesList.length;
 
-    if (hq.loaiTruSo && hq.loaiTruSo !== 'khu_pho') {
+  // Combined or filtered list based on category
+  const filteredList = (() => {
+    if (selectedCategory === 'ALL') return [...headquartersList, ...redSiteHqs];
+    if (selectedCategory === 'GOVERNMENT') return headquartersList.filter((hq) => ['ubnd', 'mat_tran', 'cong_an', 'quan_su', 'y_te'].includes(hq.loaiTruSo));
+    if (selectedCategory === 'KHU_PHO') return headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho');
+    if (selectedCategory === 'RED_SITES') return redSiteHqs;
+    return headquartersList.filter((hq) => hq.loaiTruSo === selectedCategory);
+  })();
+
+  // Helper to create custom SVG / HTML L.divIcon for Leaflet
+  const createCustomIcon = (hq: Headquarters, isSelected: boolean) => {
+    const isRedSite = hq.tenTruSo.startsWith('🚩');
+    let bgColor = 'bg-red-600';
+    let borderColor = 'border-amber-300';
+    let iconHtml = '🏛️';
+
+    if (isRedSite) {
+      bgColor = 'bg-amber-600';
+      borderColor = 'border-red-300';
+      iconHtml = '<span class="text-base">🚩</span>';
+    } else {
       switch (hq.loaiTruSo) {
-        case 'ubnd': return 'UBND';
-        case 'mat_tran': return 'MTTQ';
-        case 'cong_an': return 'CA';
-        case 'quan_su': return 'QS';
-        case 'y_te': return 'YT';
-      }
-    }
-
-    return 'KP';
-  };
-
-  // Map Headquarters data records to unified MapLocationItem
-  const hqItems: MapLocationItem[] = useMemo(() => {
-    return headquartersList.map((hq) => {
-      const isKp = hq.loaiDiem === 'KHU_PHO' || hq.loaiTruSo === 'khu_pho' || (!hq.loaiDiem && (hq.khuPho || hq.khuPhoThuocVong || hq.id.startsWith('KP')));
-      const shortLabel = getHqShortLabel(hq);
-      
-      let popupHeaderTitle = 'CƠ QUAN PHƯỜNG';
-      if (isKp) {
-        const kpNum = shortLabel.replace('KP', '');
-        popupHeaderTitle = `TRỤ SỞ KHU PHỐ ${kpNum}`.trim();
-      } else if (shortLabel === 'UBND') {
-        popupHeaderTitle = 'CƠ QUAN PHƯỜNG - UBND';
-      } else if (shortLabel === 'MTTQ') {
-        popupHeaderTitle = 'CƠ QUAN PHƯỜNG - MTTQ';
-      } else if (shortLabel === 'CA') {
-        popupHeaderTitle = 'CƠ QUAN PHƯỜNG - CÔNG AN';
-      } else if (shortLabel === 'QS') {
-        popupHeaderTitle = 'CƠ QUAN PHƯỜNG - QUÂN SỰ';
-      } else if (shortLabel === 'YT') {
-        popupHeaderTitle = 'CƠ QUAN PHƯỜNG - Y TẾ';
-      }
-
-      return {
-        id: hq.id,
-        isRedSite: false,
-        rawHeadquarters: hq,
-        title: hq.tenTruSo,
-        shortLabel,
-        popupHeaderTitle,
-        category: isKp ? 'Khu phố' : 'Cơ quan Phường',
-        khuPho: hq.khuPho || hq.khuPhoThuocVong,
-        address: hq.diaChi,
-        phone: hq.soDienThoai ? String(hq.soDienThoai).trim() : '',
-        hours: hq.gioLamViec,
-        officerName: hq.canBoPhuTrach,
-        officerRole: hq.chucVuCanBo,
-        summary: hq.moTaChucNang,
-        toaDo: hq.toaDo,
-        loaiDiem: hq.loaiDiem,
-        loaiTruSo: hq.loaiTruSo,
-      };
-    });
-  }, [headquartersList]);
-
-  // Map RedSite records to unified MapLocationItem
-  const redSiteItems: MapLocationItem[] = useMemo(() => {
-    return redSitesList.map((site) => ({
-      id: site.id,
-      isRedSite: true,
-      rawRedSite: site,
-      title: site.name,
-      shortLabel: '⭐',
-      popupHeaderTitle: `ĐỊA CHỈ ĐỎ - ${site.category || 'DI TÍCH LỊCH SỬ'}`,
-      category: site.category || 'Di tích Lịch sử',
-      khuPho: site.khuPho,
-      address: site.address,
-      hours: site.openHours || 'Tất cả các ngày trong tuần',
-      ticketPrice: site.ticketPrice || 'Miễn phí',
-      summary: site.summary || site.detailedHistory,
-      toaDo: site.toaDo,
-    }));
-  }, [redSitesList]);
-
-  // Combine Headquarters and RedSites
-  const allLocationItems = useMemo(() => [...hqItems, ...redSiteItems], [hqItems, redSiteItems]);
-
-  // Filter location items by global Khu phố filter AND category filter
-  const filteredList = useMemo(() => {
-    return allLocationItems.filter((item) => {
-      // 1. Filter by Khu phố filter if active
-      if (selectedKhuPhoFilter && selectedKhuPhoFilter !== 'ALL') {
-        const kpMatch = item.khuPho === selectedKhuPhoFilter ||
-          item.title.toLowerCase().includes(selectedKhuPhoFilter.toLowerCase()) ||
-          item.shortLabel.toLowerCase() === selectedKhuPhoFilter.replace('Khu phố ', 'KP').toLowerCase();
-        if (!kpMatch && !item.isRedSite && item.loaiDiem !== 'KHU_PHO' && item.loaiTruSo !== 'khu_pho') {
-          // Administrative HQs remain visible when searching unless strictly KP specific
-        } else if (!kpMatch) {
-          return false;
-        }
-      }
-
-      // 2. Filter by Category tab inside map view
-      if (selectedCategory === 'ALL') return true;
-      if (selectedCategory === 'GOVERNMENT') return !item.isRedSite && (item.loaiDiem === 'CO_QUAN' || (item.loaiTruSo && item.loaiTruSo !== 'khu_pho'));
-      if (selectedCategory === 'KHU_PHO') return !item.isRedSite && (item.loaiDiem === 'KHU_PHO' || item.loaiTruSo === 'khu_pho');
-      if (selectedCategory === 'RED_SITES') return item.isRedSite;
-      return true;
-    });
-  }, [allLocationItems, selectedKhuPhoFilter, selectedCategory]);
-
-  // Group 23 Headquarters records dynamically for the Quick Jump dropdown (excludes Red Sites)
-  const { wardAgencies, kpHeadquarters } = useMemo(() => {
-    const agencies: MapLocationItem[] = [];
-    const kps: MapLocationItem[] = [];
-
-    hqItems.forEach((item) => {
-      const isKp = item.loaiDiem === 'KHU_PHO' || item.loaiTruSo === 'khu_pho' || item.shortLabel.startsWith('KP');
-      if (isKp) {
-        kps.push(item);
-      } else {
-        agencies.push(item);
-      }
-    });
-
-    // Desired order for agencies: UBND, MTTQ, CA, QS, YT
-    const agencyOrder: { [key: string]: number } = {
-      UBND: 1,
-      MTTQ: 2,
-      CA: 3,
-      QS: 4,
-      YT: 5,
-    };
-
-    agencies.sort((a, b) => {
-      const orderA = agencyOrder[a.shortLabel] || 99;
-      const orderB = agencyOrder[b.shortLabel] || 99;
-      return orderA - orderB;
-    });
-
-    // Numeric sort for KP headquarters: KP1..KP18
-    kps.sort((a, b) => {
-      const numA = parseInt(a.shortLabel.replace(/\D/g, ''), 10) || 0;
-      const numB = parseInt(b.shortLabel.replace(/\D/g, ''), 10) || 0;
-      return numA - numB;
-    });
-
-    return { wardAgencies: agencies, kpHeadquarters: kps };
-  }, [hqItems]);
-
-  // Helper to fit map bounds to any given list of MapLocationItems
-  const fitBoundsForItems = (items: MapLocationItem[]) => {
-    setSelectedLocation(null);
-    if (mapInstanceRef.current && items.length > 0) {
-      const bounds = L.latLngBounds(items.map((item) => [item.toaDo.lat, item.toaDo.lng]));
-      mapInstanceRef.current.fitBounds(bounds, {
-        padding: [30, 30],
-        maxZoom: 16,
-        animate: true,
-        duration: 0.8,
-      });
-    }
-  };
-
-  // Handle Category selection change from top header buttons
-  const handleCategorySelect = (cat: string) => {
-    setSelectedCategory(cat);
-    setSelectedLocation(null);
-    const catFiltered = allLocationItems.filter((item) => {
-      if (selectedKhuPhoFilter && selectedKhuPhoFilter !== 'ALL') {
-        const kpMatch = item.khuPho === selectedKhuPhoFilter ||
-          item.title.toLowerCase().includes(selectedKhuPhoFilter.toLowerCase()) ||
-          item.shortLabel.toLowerCase() === selectedKhuPhoFilter.replace('Khu phố ', 'KP').toLowerCase();
-        if (!kpMatch && !item.isRedSite && item.loaiDiem !== 'KHU_PHO' && item.loaiTruSo !== 'khu_pho') {
-        } else if (!kpMatch) {
-          return false;
-        }
-      }
-
-      if (cat === 'ALL') return true;
-      if (cat === 'GOVERNMENT') return !item.isRedSite && (item.loaiDiem === 'CO_QUAN' || (item.loaiTruSo && item.loaiTruSo !== 'khu_pho'));
-      if (cat === 'KHU_PHO') return !item.isRedSite && (item.loaiDiem === 'KHU_PHO' || item.loaiTruSo === 'khu_pho');
-      if (cat === 'RED_SITES') return item.isRedSite;
-      return true;
-    });
-    fitBoundsForItems(catFiltered);
-  };
-
-  // Handle Quick Jump selection from dropdown
-  const handleQuickJumpChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = e.target.value;
-    if (!selectedId) {
-      handleResetView();
-      return;
-    }
-
-    // Find renderLocation corresponding to selectedId
-    const foundRenderItem = renderLocations.find(({ item }) => item.id === selectedId);
-    if (foundRenderItem && mapInstanceRef.current) {
-      const { item, renderLat, renderLng } = foundRenderItem;
-      setSelectedLocation(item);
-      mapInstanceRef.current.flyTo([renderLat, renderLng], 17, { duration: 0.8 });
-    } else {
-      const item = allLocationItems.find((loc) => loc.id === selectedId);
-      if (item && mapInstanceRef.current) {
-        setSelectedLocation(item);
-        mapInstanceRef.current.flyTo([item.toaDo.lat, item.toaDo.lng], 17, { duration: 0.8 });
-      }
-    }
-  };
-
-  // Reset map view to full bounds based dynamically on current category filtered items
-  const handleResetView = () => {
-    fitBoundsForItems(filteredList);
-  };
-
-  // Dynamic dropdown placeholder based on selected category
-  const dropdownPlaceholder = useMemo(() => {
-    switch (selectedCategory) {
-      case 'GOVERNMENT':
-        return '-- Chọn cơ quan Phường --';
-      case 'KHU_PHO':
-        return '-- Chọn Trụ sở Khu phố --';
-      case 'RED_SITES':
-        return '-- Chọn Địa chỉ đỏ --';
-      case 'ALL':
-      default:
-        return '-- Chọn cơ quan hoặc trụ sở --';
-    }
-  }, [selectedCategory]);
-
-  // Handle marker overlap (e.g. KP12 & KP14 at 10.739932, 106.637962; KP13 & KP15 at 10.744097, 106.638407)
-  // Calculate tiny rendering offsets so markers sharing exact lat,lng appear side-by-side without obscuring each other.
-  const renderLocations = useMemo(() => {
-    const coordGroups: { [key: string]: MapLocationItem[] } = {};
-    filteredList.forEach((item) => {
-      const key = `${item.toaDo.lat.toFixed(6)},${item.toaDo.lng.toFixed(6)}`;
-      if (!coordGroups[key]) coordGroups[key] = [];
-      coordGroups[key].push(item);
-    });
-
-    return filteredList.map((item) => {
-      const key = `${item.toaDo.lat.toFixed(6)},${item.toaDo.lng.toFixed(6)}`;
-      const group = coordGroups[key];
-      if (group.length <= 1) {
-        return { item, renderLat: item.toaDo.lat, renderLng: item.toaDo.lng };
-      }
-
-      const index = group.indexOf(item);
-      // Micro offset (~15-20 meters shift on map stage for display only)
-      const angle = (index / group.length) * 2 * Math.PI - Math.PI / 2;
-      const offsetDist = 0.00016;
-      const renderLat = item.toaDo.lat + Math.sin(angle) * offsetDist * 0.8;
-      const renderLng = item.toaDo.lng + Math.cos(angle) * offsetDist;
-
-      return { item, renderLat, renderLng };
-    });
-  }, [filteredList]);
-
-  // Create Leaflet Custom DivIcon for map markers
-  const createCustomMarkerIcon = (item: MapLocationItem, isSelected: boolean) => {
-    const animClass = isSelected ? 'animate-bounce scale-110 z-[1000]' : 'hover:scale-115 transition-transform cursor-pointer z-10';
-    const ringClass = isSelected ? 'ring-4 ring-amber-400 shadow-2xl scale-105' : 'shadow-md';
-
-    if (item.isRedSite) {
-      // ĐỊA CHỈ ĐỎ MARKER: Distinct Amber/Gold badge with Red border & Star ⭐
-      const html = `
-        <div class="relative group cursor-pointer flex flex-col items-center ${animClass}">
-          <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-red-950 border-2 border-red-700 ${ringClass} font-extrabold text-xs shadow-lg whitespace-nowrap transition-all">
-            <span class="text-sm">⭐</span>
-            <span class="tracking-tight text-[11px] font-black uppercase text-red-950">ĐỊA CHỈ ĐỎ</span>
-          </div>
-          <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-red-700 -mt-[1px]"></div>
-        </div>
-      `;
-
-      return L.divIcon({
-        html,
-        className: 'custom-leaflet-marker-redsite',
-        iconSize: [110, 36],
-        iconAnchor: [55, 36],
-        popupAnchor: [0, -36],
-      });
-    } else {
-      // TRỤ SỞ KHU PHỐ & CƠ QUAN MARKER: Clear short label (KP1..KP18, UBND, MTTQ, etc.)
-      let bgColor = 'bg-red-700';
-      let borderColor = 'border-amber-300';
-      let icon = '🏠';
-      let labelColor = 'text-amber-200';
-
-      if (item.loaiDiem === 'CO_QUAN' || item.loaiTruSo !== 'khu_pho') {
-        if (item.shortLabel === 'UBND') {
-          bgColor = 'bg-red-800';
-          borderColor = 'border-amber-400';
-          icon = '🏛️';
-          labelColor = 'text-amber-200';
-        } else if (item.shortLabel === 'MTTQ') {
-          bgColor = 'bg-red-900';
-          borderColor = 'border-amber-400';
-          icon = `<svg class="w-3.5 h-3.5 fill-amber-400 shrink-0 inline-block" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
-          labelColor = 'text-white';
-        } else if (item.shortLabel === 'CA') {
-          bgColor = 'bg-blue-700';
+        case 'ubnd':
+          bgColor = 'bg-red-600';
           borderColor = 'border-amber-300';
-          icon = '🛡️';
-          labelColor = 'text-amber-200';
-        } else if (item.shortLabel === 'QS') {
+          iconHtml = '<span class="text-base">🏛️</span>';
+          break;
+        case 'mat_tran':
+          bgColor = 'bg-red-700';
+          borderColor = 'border-amber-400';
+          iconHtml = `<img src="/mat_tran_logo.svg" alt="Mặt trận Tổ quốc" class="w-full h-full object-contain p-0.5 rounded-full" referrerPolicy="no-referrer" />`;
+          break;
+        case 'cong_an':
+          bgColor = 'bg-blue-600';
+          borderColor = 'border-amber-300';
+          iconHtml = '<span class="text-base">🛡️</span>';
+          break;
+        case 'quan_su':
           bgColor = 'bg-emerald-700';
           borderColor = 'border-amber-300';
-          icon = '🎖️';
-          labelColor = 'text-amber-200';
-        } else if (item.shortLabel === 'YT') {
-          bgColor = 'bg-sky-700';
-          borderColor = 'border-amber-300';
-          icon = '🏥';
-          labelColor = 'text-amber-200';
+          iconHtml = '<span class="text-base">🎖️</span>';
+          break;
+        case 'y_te':
+          bgColor = 'bg-sky-600';
+          borderColor = 'border-red-400';
+          iconHtml = '<span class="text-base">🏥</span>';
+          break;
+        case 'khu_pho': {
+          bgColor = 'bg-red-700';
+          borderColor = 'border-amber-400';
+          const match = hq.tenTruSo.match(/\d+/) || hq.khuPhoThuocVong?.match(/\d+/);
+          const kpNum = match ? match[0] : '';
+          iconHtml = `
+            <div class="flex flex-col items-center justify-center leading-none text-white select-none">
+              <span class="text-[8px] font-black tracking-tighter text-amber-300 uppercase">KP</span>
+              <span class="text-[11px] sm:text-xs font-black -mt-0.5">${kpNum}</span>
+            </div>
+          `;
+          break;
         }
       }
-
-      const html = `
-        <div class="relative group cursor-pointer flex flex-col items-center ${animClass}">
-          <div class="flex items-center gap-1 px-2.5 py-1 rounded-full ${bgColor} text-white border-2 ${borderColor} ${ringClass} font-black text-xs shadow-lg whitespace-nowrap transition-all">
-            <span class="text-xs">${icon}</span>
-            <span class="tracking-wide text-[11px] font-bold ${labelColor}">${item.shortLabel}</span>
-          </div>
-          <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-amber-400 -mt-[1px]"></div>
-        </div>
-      `;
-
-      return L.divIcon({
-        html,
-        className: 'custom-leaflet-marker-hq',
-        iconSize: [80, 36],
-        iconAnchor: [40, 36],
-        popupAnchor: [0, -36],
-      });
     }
+
+    const animClass = isSelected ? 'animate-selected-jump z-50 scale-125' : 'animate-pin-jump hover:scale-110';
+    const ringClass = isSelected ? 'ring-3 sm:ring-4 ring-amber-400 shadow-xl' : 'shadow-md';
+
+    const html = `
+      <div class="relative group cursor-pointer ${animClass}">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full ${bgColor} border-2 ${borderColor} ${ringClass} flex items-center justify-center text-white overflow-hidden transition-transform">
+          ${iconHtml}
+        </div>
+        <div class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 sm:w-2 sm:h-2 ${bgColor} rotate-45 border-r border-b ${borderColor}"></div>
+      </div>
+    `;
+
+    return L.divIcon({
+      html,
+      className: 'custom-leaflet-marker',
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -36],
+    });
   };
+
+  // Effect to center map on selected Khu phố when filter changes (Deep Link support)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !selectedKhuPhoFilter || selectedKhuPhoFilter === 'ALL' || selectedKhuPhoFilter === 'Ban Thường trực') return;
+    
+    // Find matching headquarters for the filtered Khu phố
+    const hq = headquartersList.find(h => 
+      h.loaiTruSo === 'khu_pho' && 
+      (h.khuPhoThuocVong === selectedKhuPhoFilter || h.tenTruSo.includes(selectedKhuPhoFilter))
+    );
+    
+    if (hq) {
+      setSelectedHq(hq);
+      mapInstanceRef.current.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 1 });
+    }
+  }, [selectedKhuPhoFilter, headquartersList]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Initialize Leaflet map if not created
+    // Initialize map if not already created
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [10.7460, 106.6435], // Centered in Phường Bình Tiên, District 6
+        center: [10.7490, 106.6500], // Centered in Ward Binh Tien
         zoom: 15,
         zoomControl: true,
       });
@@ -417,335 +160,230 @@ export const AdminMap: React.FC<AdminMapProps> = ({
         maxZoom: 19,
       }).addTo(map);
 
-      // Dismiss popup when user taps on empty map area
-      map.on('click', () => {
-        setSelectedLocation(null);
-      });
-
       mapInstanceRef.current = map;
     }
 
     const map = mapInstanceRef.current;
 
-    // Clear existing map markers
+    // Clear existing markers
     Object.values(markersRef.current).forEach((marker: L.Marker) => marker.remove());
     markersRef.current = {};
 
-    // Render markers with display offsets for overlapping coordinates
-    renderLocations.forEach(({ item, renderLat, renderLng }) => {
-      const isSelected = selectedLocation?.id === item.id;
-      const icon = createCustomMarkerIcon(item, isSelected);
+    const bounds = L.latLngBounds([]);
 
-      const marker = L.marker([renderLat, renderLng], { icon }).addTo(map);
+    // Add markers for filtered headquarters & red sites
+    filteredList.forEach((hq) => {
+      const isSelected = selectedHq?.id === hq.id;
+      const icon = createCustomIcon(hq, isSelected);
 
-      marker.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        setSelectedLocation(item);
-        map.flyTo([renderLat, renderLng], 17, { duration: 0.8 });
+      const marker = L.marker([hq.toaDo.lat, hq.toaDo.lng], { icon }).addTo(map);
+      bounds.extend([hq.toaDo.lat, hq.toaDo.lng]);
+
+      marker.on('click', () => {
+        setSelectedHq(hq);
+        map.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 0.6 });
       });
 
-      markersRef.current[item.id] = marker;
+      markersRef.current[hq.id] = marker;
     });
-  }, [renderLocations, selectedLocation?.id]);
 
-  // Construct Google Maps direction URL with exact real coordinates lat,lng
-  const getDirectionUrl = (item: MapLocationItem) => {
-    if (item.toaDo && item.toaDo.lat && item.toaDo.lng) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${item.toaDo.lat},${item.toaDo.lng}`;
+    // Auto-fit map viewport to show all matching markers nicely when switching filters
+    if (bounds.isValid() && filteredList.length > 0 && !selectedHq) {
+      map.fitBounds(bounds, { padding: [35, 35], maxZoom: 16 });
     }
-    return getGoogleMapsDirLink(item.address);
-  };
+
+  }, [filteredList, selectedHq?.id]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden my-4">
+    <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden my-3">
       
-      {/* Header bar - Red & Gold theme */}
-      <div className="bg-gradient-to-r from-red-950 via-red-900 to-red-950 px-4 py-3 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b-2 border-amber-500 shadow-sm">
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="p-2 bg-amber-400/20 rounded-xl border border-amber-400/40">
-            <MapPin className="w-5 h-5 text-amber-400 shrink-0" />
-          </div>
+      {/* Map Header - Government Red & Gold Theme */}
+      <div className="bg-red-900 px-3 py-2.5 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b-2 border-amber-500 overflow-hidden">
+        <div className="flex items-center gap-2 shrink-0">
+          <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
           <div>
-            <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-amber-300 flex items-center gap-2">
-              <span>BẢN ĐỒ KHU PHỐ & ĐỊA CHỈ ĐỎ</span>
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-300">
+              BẢN ĐỒ TRỤ SỞ & ĐỊA CHỈ ĐỎ
             </h2>
-            <p className="text-[11px] text-red-100/90 font-medium">
-              Chạm vào marker để xem thông tin chi tiết và chỉ đường
+            <p className="text-[10px] sm:text-[11px] text-red-100/90 font-medium hidden md:block">
+              Hiển thị đầy đủ 18 Trụ sở Khu phố, 5 Cơ quan Phường và các Di tích Lịch sử
             </p>
           </div>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto no-scrollbar py-0.5 shrink-0">
+        {/* Category Filters - 2-column responsive grid on mobile, flex row on tablet/desktop */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-row items-stretch sm:items-center gap-1.5 w-full sm:w-auto">
           <button
-            onClick={() => handleCategorySelect('ALL')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            onClick={() => {
+              setSelectedCategory('ALL');
+              setSelectedHq(null);
+            }}
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all text-center flex items-center justify-center ${
               selectedCategory === 'ALL'
-                ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
-                : 'bg-red-950/90 hover:bg-red-800 text-red-100 border border-red-800'
+                ? 'bg-amber-400 text-red-950 shadow-sm'
+                : 'bg-red-950/80 hover:bg-red-800 text-red-100 border border-red-800/80'
             }`}
           >
-            Tất cả ({allLocationItems.length})
+            Tất cả ({totalCount})
           </button>
           <button
-            onClick={() => handleCategorySelect('KHU_PHO')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
-              selectedCategory === 'KHU_PHO'
-                ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
-                : 'bg-red-950/90 hover:bg-red-800 text-red-100 border border-red-800'
-            }`}
-          >
-            <span>🏠 Trụ sở Khu phố</span>
-          </button>
-          <button
-            onClick={() => handleCategorySelect('GOVERNMENT')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
+            onClick={() => {
+              setSelectedCategory('GOVERNMENT');
+              setSelectedHq(null);
+            }}
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all text-center flex items-center justify-center gap-1 ${
               selectedCategory === 'GOVERNMENT'
-                ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
-                : 'bg-red-950/90 hover:bg-red-800 text-red-100 border border-red-800'
+                ? 'bg-amber-400 text-red-950 shadow-sm'
+                : 'bg-red-950/80 hover:bg-red-800 text-red-100 border border-red-800/80'
             }`}
           >
-            <span>🏛️ Cơ quan Phường</span>
+            <span>🏛️</span>
+            <span>Cơ quan Phường ({govCount})</span>
           </button>
           <button
-            onClick={() => handleCategorySelect('RED_SITES')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
-              selectedCategory === 'RED_SITES'
-                ? 'bg-amber-400 text-red-950 shadow-md ring-2 ring-amber-300'
-                : 'bg-red-950/90 hover:bg-red-800 text-red-100 border border-red-800'
+            onClick={() => {
+              setSelectedCategory('KHU_PHO');
+              setSelectedHq(null);
+            }}
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all text-center flex items-center justify-center gap-1 ${
+              selectedCategory === 'KHU_PHO'
+                ? 'bg-amber-400 text-red-950 shadow-sm'
+                : 'bg-red-950/80 hover:bg-red-800 text-red-100 border border-red-800/80'
             }`}
           >
-            <Landmark className="w-3.5 h-3.5 text-amber-300" />
+            <span>📍</span>
+            <span>Trụ sở Khu phố ({kpCount})</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${selectedCategory === 'KHU_PHO' ? 'rotate-180' : ''}`} />
+          </button>
+          <button
+            onClick={() => {
+              setSelectedCategory('RED_SITES');
+              setSelectedHq(null);
+            }}
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all text-center flex items-center justify-center gap-1 ${
+              selectedCategory === 'RED_SITES'
+                ? 'bg-amber-400 text-red-950 shadow-sm'
+                : 'bg-red-950/80 hover:bg-red-800 text-red-100 border border-red-800/80'
+            }`}
+          >
+            <Landmark className="w-3.5 h-3.5 text-amber-300 shrink-0" />
             <span>Địa chỉ đỏ ({redSitesList.length})</span>
           </button>
         </div>
       </div>
 
-      {/* Quick Jump Bar - Đến nhanh Trụ sở / Cơ quan */}
-      <div className="bg-amber-50/90 border-b border-amber-200 px-3.5 py-2.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs">
-        <div className="flex items-center gap-2 text-xs font-black uppercase text-amber-950 tracking-wider shrink-0">
-          <Navigation className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>ĐẾN NHANH TRỤ SỞ / CƠ QUAN</span>
+      {/* Dropdown for specific Khu phố selection - Appears when KHU_PHO is active */}
+      {selectedCategory === 'KHU_PHO' && (
+        <div className="bg-red-800/95 px-3 py-2.5 border-b border-amber-500/30 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="relative">
+            <select
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'ALL') {
+                  setSelectedHq(null);
+                  if (mapInstanceRef.current) {
+                    const kpMarkers = headquartersList.filter(h => h.loaiTruSo === 'khu_pho');
+                    if (kpMarkers.length > 0) {
+                      const bounds = L.latLngBounds(kpMarkers.map(h => [h.toaDo.lat, h.toaDo.lng]));
+                      mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
+                    }
+                  }
+                } else {
+                  const num = parseInt(val);
+                  const hq = headquartersList.find(h => 
+                    h.loaiTruSo === 'khu_pho' && 
+                    (h.tenTruSo.includes(`Khu phố ${num}`) || h.khuPhoThuocVong === `Khu phố ${num}`)
+                  );
+                  if (hq && mapInstanceRef.current) {
+                    setSelectedHq(hq);
+                    mapInstanceRef.current.flyTo([hq.toaDo.lat, hq.toaDo.lng], 18, { duration: 1 });
+                  }
+                }
+              }}
+              value={selectedHq?.khuPhoThuocVong?.replace('Khu phố ', '') || selectedHq?.tenTruSo?.replace('Trụ sở Khu phố ', '') || 'ALL'}
+              className="w-full bg-red-950 border border-amber-500/30 text-amber-50 text-xs font-bold rounded-lg py-2.5 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 appearance-none cursor-pointer shadow-sm"
+            >
+              <option value="ALL">Tất cả 18 Khu phố</option>
+              {Array.from({ length: 18 }, (_, i) => i + 1).map(num => (
+                <option key={num} value={num}>Khu phố {num}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-amber-500">
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-2 flex-1 max-w-full sm:max-w-xl">
-          <select
-            value={selectedLocation ? selectedLocation.id : ''}
-            onChange={handleQuickJumpChange}
-            className="w-full min-h-[44px] px-3 py-2 bg-white border-2 border-amber-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs cursor-pointer truncate"
-          >
-            <option value="">{dropdownPlaceholder}</option>
-            {selectedCategory === 'ALL' && (
-              <>
-                <optgroup label="🏛️ CƠ QUAN PHƯỜNG">
-                  {wardAgencies.map((agency) => (
-                    <option key={agency.id} value={agency.id}>
-                      {agency.title}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="🏠 TRỤ SỞ KHU PHỐ">
-                  {kpHeadquarters.map((kp) => (
-                    <option key={kp.id} value={kp.id}>
-                      {kp.title}
-                    </option>
-                  ))}
-                </optgroup>
-                {redSiteItems.length > 0 && (
-                  <optgroup label="⭐ ĐỊA CHỈ ĐỎ">
-                    {redSiteItems.map((site) => (
-                      <option key={site.id} value={site.id}>
-                        {site.title}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </>
-            )}
-            {selectedCategory === 'GOVERNMENT' && (
-              wardAgencies.map((agency) => (
-                <option key={agency.id} value={agency.id}>
-                  {agency.title}
-                </option>
-              ))
-            )}
-            {selectedCategory === 'KHU_PHO' && (
-              kpHeadquarters.map((kp) => (
-                <option key={kp.id} value={kp.id}>
-                  {kp.title}
-                </option>
-              ))
-            )}
-            {selectedCategory === 'RED_SITES' && (
-              redSiteItems.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.title}
-                </option>
-              ))
-            )}
-          </select>
-
-          <button
-            onClick={handleResetView}
-            className="min-h-[44px] px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-amber-300 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm shrink-0 active:scale-95 transition-all"
-            title="Xem toàn bộ bản đồ"
-          >
-            <span>XEM TOÀN BỘ</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Map Area Container */}
-      <div className="relative w-full h-[520px] sm:h-[600px] bg-slate-100">
+      {/* Main Map Container */}
+      <div className="relative w-full h-[480px] sm:h-[580px]">
         
         {/* Interactive Leaflet Map Stage */}
         <div ref={mapContainerRef} className="w-full h-full z-10" />
 
-        {/* Compact Responsive Map Legend Overlay (Top Left) */}
-        <div className="absolute top-3 left-3 z-20 bg-slate-950/85 backdrop-blur-md text-white border border-amber-500/50 rounded-xl px-3 py-2 shadow-xl max-w-[240px] text-[11px] space-y-1">
-          <div className="font-extrabold uppercase text-amber-400 tracking-wider text-[10px] pb-1 border-b border-white/10 flex items-center justify-between">
-            <span>CHÚ GIẢI BẢN ĐỒ</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-200">
-            <span className="px-1.5 py-0.5 rounded bg-red-700 border border-amber-300 text-amber-200 font-bold text-[10px]">🏠 KP1..18</span>
-            <span className="truncate font-medium">Trụ sở Khu phố</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-200">
-            <span className="px-1.5 py-0.5 rounded bg-red-900 border border-amber-300 text-amber-200 font-bold text-[10px]">🏛️ Cơ quan</span>
-            <span className="truncate font-medium">Cơ quan Phường</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-200">
-            <span className="px-1.5 py-0.5 rounded bg-amber-500 text-red-950 border border-red-700 font-black text-[10px]">⭐ ĐIỂM ĐỎ</span>
-            <span className="truncate font-medium">Địa chỉ đỏ / Di tích</span>
-          </div>
-        </div>
-
-        {/* Floating Tapped Location Card Popup (Bottom Center / Mobile Responsive) */}
-        {selectedLocation && (
-          <div className="absolute bottom-4 left-3 right-3 sm:left-auto sm:right-4 sm:max-w-md z-30 bg-white rounded-2xl p-4 shadow-2xl border-2 border-amber-400 animate-slide-up transition-all">
+        {/* Floating Selected Headquarters Detail Card Overlay on Map */}
+        {selectedHq && (
+          <div className="absolute bottom-4 left-3 right-3 sm:left-4 sm:right-auto sm:max-w-[320px] z-20 bg-white rounded-xl p-2.5 sm:p-3 shadow-2xl border border-amber-300 animate-slide-up">
             
-            {/* Card Header & Close Button */}
-            <div className="flex items-start justify-between gap-2 pb-2.5 mb-2.5 border-b border-slate-100">
-              <div className="space-y-1">
-                <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider ${
-                  selectedLocation.isRedSite 
-                    ? 'bg-amber-500 text-red-950 border border-red-700 shadow-xs' 
-                    : 'bg-red-900 text-amber-300 border border-amber-400 shadow-xs'
-                }`}>
-                  {selectedLocation.popupHeaderTitle}
-                </span>
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 leading-snug">
-                  {selectedLocation.title}
-                </h3>
-              </div>
-              
-              {/* Close Button X */}
+            {/* Top Badge & Close button */}
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="inline-block px-2 py-0.5 rounded font-bold uppercase text-[10px] bg-red-900 text-amber-300 tracking-wide shadow-xs truncate max-w-[200px]">
+                {selectedHq.tenTruSo}
+              </span>
               <button
-                onClick={() => setSelectedLocation(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors shrink-0"
-                title="Đóng cửa sổ"
-                aria-label="Close modal"
+                onClick={() => setSelectedHq(null)}
+                className="text-slate-400 hover:text-slate-700 text-xs font-bold p-1 hover:bg-slate-100 rounded transition-colors"
+                title="Đóng"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
-            {/* Information Grid */}
-            <div className="space-y-2 text-xs sm:text-sm text-slate-700 mb-4 max-h-[220px] overflow-y-auto pr-1">
-              
-              {/* Address Row */}
-              {selectedLocation.address && (
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-slate-900">Địa chỉ: </span>
-                    <span>{selectedLocation.address}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Khu phố (if available) */}
-              {selectedLocation.khuPho && (
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-slate-900">Khu vực: </span>
-                    <span className="font-bold text-red-900">{selectedLocation.khuPho}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Phone Row (Only shown if soDienThoai has data) */}
-              {selectedLocation.phone && (
-                <div className="flex items-start gap-2">
-                  <Phone className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-slate-900">Số điện thoại: </span>
-                    <span className="font-mono font-bold text-emerald-800">{selectedLocation.phone}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Officer / Contact Person (for HQs if available) */}
-              {selectedLocation.officerName && (
-                <div className="flex items-start gap-2">
-                  <User className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-slate-900">Phụ trách: </span>
-                    <span className="font-bold text-slate-900">{selectedLocation.officerName}</span>
-                    {selectedLocation.officerRole && (
-                      <span className="text-slate-500 text-xs block font-medium">({selectedLocation.officerRole})</span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Working Hours / Open Hours */}
-              {selectedLocation.hours && (
-                <div className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-slate-900">Giờ hoạt động: </span>
-                    <span className="text-slate-600">{selectedLocation.hours}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Summary / History description (for Red Sites or HQs if available) */}
-              {selectedLocation.summary && (
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 mt-2 leading-relaxed">
-                  <p className="line-clamp-4 font-normal">{selectedLocation.summary}</p>
-                </div>
-              )}
-
+            {/* Address Row */}
+            <div className="flex items-start gap-1.5 text-[11px] font-semibold text-slate-700 pb-1.5 mb-1.5 border-b border-slate-100">
+              <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+              <span className="leading-snug">{selectedHq.diaChi}</span>
             </div>
 
-            {/* Action Buttons: Directions & Call */}
-            <div className="flex items-center gap-2 pt-1">
-              
-              {/* Directions Button */}
+            {/* Officer & Contact Details (If available) */}
+            {selectedHq.canBoPhuTrach && (
+              <div className="flex flex-col gap-1 text-[11px] text-slate-600 pb-2 mb-2 border-b border-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">
+                    <strong className="text-slate-800">{selectedHq.canBoPhuTrach}</strong>
+                    {selectedHq.chucVuCanBo ? ` (${selectedHq.chucVuCanBo})` : ''}
+                  </span>
+                </div>
+                {selectedHq.soDienThoai && (
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <span className="flex items-center gap-1.5 font-bold text-slate-700">
+                      <Phone className="w-3 h-3 text-emerald-600 shrink-0" />
+                      {formatPhoneNumber(selectedHq.soDienThoai)}
+                    </span>
+                    <a
+                      href={`tel:${selectedHq.soDienThoai}`}
+                      className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                    >
+                      <Phone className="w-2.5 h-2.5" />
+                      <span>Gọi ngay</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Main Action Button - Directions Only */}
+            <div className="pt-0.5">
               <a
-                href={getDirectionUrl(selectedLocation)}
+                href={getGoogleMapsDirLink(selectedHq.diaChi)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 min-h-[46px] py-2.5 px-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-600 text-slate-950 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all"
+                className="w-full min-h-[36px] py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all"
               >
-                <Navigation className="w-4.5 h-4.5 fill-slate-950 shrink-0" />
-                <span>CHỈ ĐƯỜNG BẢN ĐỒ</span>
+                <Navigation className="w-3.5 h-3.5 fill-slate-950" />
+                <span>CHỈ ĐƯỜNG ĐẾN VỊ TRÍ</span>
               </a>
-
-              {/* Direct Phone Call Button (Only shown if phone number is present) */}
-              {selectedLocation.phone && (
-                <a
-                  href={`tel:${selectedLocation.phone}`}
-                  className="min-h-[46px] py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 transition-all shrink-0"
-                  title={`Gọi ${selectedLocation.phone}`}
-                >
-                  <Phone className="w-4 h-4 fill-white" />
-                  <span className="hidden sm:inline">GỌI</span>
-                </a>
-              )}
-
             </div>
 
           </div>
@@ -756,7 +394,6 @@ export const AdminMap: React.FC<AdminMapProps> = ({
     </div>
   );
 };
-
 
 
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { StatsOverview } from './components/StatsOverview';
@@ -8,69 +9,68 @@ import { AdminMap } from './components/AdminMap';
 import { QuickCallModal } from './components/QuickCallModal';
 import { AppsScriptModal } from './components/AppsScriptModal';
 import { PersonnelFormModal } from './components/PersonnelFormModal';
-import { AuthModal } from './components/AuthModal';
 import { BottomNav } from './components/BottomNav';
 import { RedSitesView } from './components/RedSitesView';
 import { ExcelImportModal } from './components/ExcelImportModal';
-import { GrassrootsDemocracyView } from './components/GrassrootsDemocracyView';
+import { DemocraticMailboxView } from './components/DemocraticMailboxView';
+import { OverviewView } from './components/OverviewView';
+import { fetchAllPersonnel, fetchAllHeadquarters, fetchAllRedSites } from './services';
 
-import { Personnel, FilterState, SyncStatus, Headquarters, RedSite } from './types';
-import { ADMINISTRATIVE_HEADQUARTERS, INITIAL_RED_SITES_DATA } from './data/initialData';
-import { isKeyLeader, isDeputyLeader, isPartyOfficial, removeVietnameseTones } from './utils/helpers';
-import { Grid, Table, Plus, Download, RefreshCw, Database, MapPin, Users, Landmark, FileSpreadsheet, RotateCcw, WifiOff, Lock } from 'lucide-react';
-import { getPersonnelApi, getPublicPersonnelApi, getPublicHeadquartersApi, getDataVersionApi, createPersonnelApi, updatePersonnelApi, deletePersonnelApi, syncAllPersonnelApi, getApiUrl, setApiUrl } from './services/api';
-import { getPersonnelCache, savePersonnelCache, getMetaValue, saveMetaValue, getHeadquartersCache, saveHeadquartersCache } from './services/db';
-import { getUserSession, UserSession } from './services/auth';
-import { SkeletonGrid, SkeletonTable } from './components/SkeletonLoader';
+import { Personnel, FilterState, SyncStatus, Headquarters, RedSite, TabType } from './types';
+import { INITIAL_PERSONNEL_DATA, BAN_THUONG_TRUC_DATA, ADMINISTRATIVE_HEADQUARTERS, INITIAL_RED_SITES_DATA } from './data/initialData';
+import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isThanhVien, isPartyOfficial, removeVietnameseTones } from './utils/helpers';
+import { Grid, Table, Plus, Download, RefreshCw, Database, MapPin, Users, Landmark, FileSpreadsheet, RotateCcw, Mail, BarChart3 } from 'lucide-react';
 
 export default function App() {
-  // --- Auth & User Session State ---
-  const [userSession, setUserSessionState] = useState<UserSession | null>(() => getUserSession());
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-
-  // --- Network Online / Offline State ---
-  const [isOnline, setIsOnline] = useState<boolean>(() => typeof window !== 'undefined' ? window.navigator.onLine : true);
-
-  // --- Persistent Local & Cloud Data State ---
-  const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
-  const [dataFetchError, setDataFetchError] = useState<string | null>(null);
-  const [dataVersion, setDataVersion] = useState<string | null>(null);
+  // --- Persistent Local & Google Sheet Data State ---
+  const [personnelList, setPersonnelList] = useState<Personnel[]>(() => {
+    const saved = localStorage.getItem('mt_personnel_data');
+    if (saved) {
+      try {
+        const parsed: Personnel[] = JSON.parse(saved);
+        const withoutBTT = parsed.filter(p => p.khuPho !== 'Ban Thường trực' && !p.id.startsWith('btt-'));
+        return [...BAN_THUONG_TRUC_DATA, ...withoutBTT];
+      } catch (e) { /* fallback */ }
+    }
+    return INITIAL_PERSONNEL_DATA;
+  });
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => {
-    const savedUrl = getApiUrl();
+    const savedUrl = localStorage.getItem('mt_apps_script_url') || '';
     return {
       isConnected: !!savedUrl,
       webAppUrl: savedUrl,
       lastSynced: null,
-      statusMessage: savedUrl ? 'Đã lưu cấu hình kết nối' : 'Chưa kết nối',
+      statusMessage: savedUrl ? 'Đã lưu đường dẫn Google Sheet' : 'Chưa kết nối',
       isLoading: false,
     };
   });
 
-  // 1-Time Migration: Loại bỏ cache mẫu cũ 'mt_personnel_data' nếu tồn tại
+  // Save to localStorage whenever data changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('mt_personnel_data')) {
-      localStorage.removeItem('mt_personnel_data');
-    }
-  }, []);
+    localStorage.setItem('mt_personnel_data', JSON.stringify(personnelList));
+  }, [personnelList]);
 
   // --- UI View States ---
-  const [activeTab, setActiveTab] = useState<'LIST' | 'MAP' | 'RED_SITES' | 'NEWS' | 'FEEDBACK' | 'STATS' | 'SETTINGS'>('LIST');
+  const [activeTab, setActiveTab] = useState<TabType>('LIST');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
 
-  // --- Headquarters State ---
+  // --- Headquarters State (18 Trụ sở Khu phố + 5 Cơ quan Phường) ---
   const [headquartersList, setHeadquartersList] = useState<Headquarters[]>(() => {
-    const saved = localStorage.getItem('mt_headquarters_data');
+    const saved = localStorage.getItem('mt_headquarters_data_v18');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+      try {
+        const parsed: Headquarters[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.filter(p => p.loaiTruSo === 'khu_pho').length >= 18) {
+          return parsed;
+        }
+      } catch (e) { /* fallback */ }
     }
     return ADMINISTRATIVE_HEADQUARTERS;
   });
 
   useEffect(() => {
-    localStorage.setItem('mt_headquarters_data', JSON.stringify(headquartersList));
-    saveHeadquartersCache(headquartersList);
+    localStorage.setItem('mt_headquarters_data_v18', JSON.stringify(headquartersList));
   }, [headquartersList]);
 
   // --- Red Sites State ---
@@ -112,223 +112,129 @@ export default function App() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
 
-  // --- Headquarters Fetch Helper (GET_PUBLIC_HEADQUARTERS) ---
-  const fetchAndSyncHeadquartersData = async (targetUrl?: string) => {
-    const url = targetUrl || getApiUrl();
-    if (!url || (typeof window !== 'undefined' && !window.navigator.onLine)) return;
-    try {
-      const hqRes = await getPublicHeadquartersApi(url);
-      if (hqRes.success && Array.isArray(hqRes.data) && hqRes.data.length > 0) {
-        setHeadquartersList(hqRes.data);
-        saveHeadquartersCache(hqRes.data);
-        localStorage.setItem('mt_headquarters_data', JSON.stringify(hqRes.data));
+  const [searchParams] = useSearchParams();
+
+  // --- Deep Link Handling (?kp=...&nganh=...&tab=...) ---
+  useEffect(() => {
+    const kpParam = searchParams.get('kp');
+    const nganhParam = searchParams.get('nganh');
+    const tabParam = searchParams.get('tab');
+
+    if (kpParam) {
+      // kp=1 -> Khu phố 1
+      const kpVal = /^\d+$/.test(kpParam) ? `Khu phố ${kpParam}` : kpParam;
+      setFilters((prev) => ({ ...prev, selectedKhuPho: kpVal }));
+      setActiveTab('LIST');
+    }
+    
+    if (nganhParam) {
+      setFilters((prev) => ({ ...prev, selectedDoanThe: nganhParam }));
+      setActiveTab('LIST');
+    }
+
+    if (tabParam) {
+      const upperTab = tabParam.toUpperCase();
+      if (['LIST', 'FEEDBACK', 'RED_SITES', 'MAP', 'STATS'].includes(upperTab)) {
+        setActiveTab(upperTab as TabType);
       }
-    } catch (err) {
-      console.error('fetchAndSyncHeadquartersData error:', err);
+    }
+  }, [searchParams]);
+
+  const handleImportExcel = (newPersonnel: Personnel[], mode: 'replace' | 'append') => {
+    if (mode === 'replace') {
+      setPersonnelList(newPersonnel);
+    } else {
+      setPersonnelList((prev) => [...prev, ...newPersonnel]);
     }
   };
 
-  // --- Centralized Data Fetch & DATA_VERSION Sync Helper ---
-  const fetchAndSyncData = async (isManual = false, hasExistingCache = false) => {
-    const targetUrl = getApiUrl();
-    if (!targetUrl) {
-      setIsLoadingData(false);
-      return;
-    }
+  const handleResetToDefault = () => {
+    setPersonnelList(INITIAL_PERSONNEL_DATA);
+    localStorage.setItem('mt_personnel_data', JSON.stringify(INITIAL_PERSONNEL_DATA));
+  };
 
-    if (typeof window !== 'undefined' && !window.navigator.onLine) {
-      setSyncStatus((prev) => ({
-        ...prev,
-        isLoading: false,
-        statusMessage: '⚠️ Đang ngoại tuyến. Dùng dữ liệu từ bộ nhớ IndexedDB.',
-      }));
-      setIsLoadingData(false);
-      if (!hasExistingCache && personnelList.length === 0) {
-        setDataFetchError('Không thể tải dữ liệu (Ngoại tuyến). Vui lòng kết nối mạng và thử lại.');
-      }
-      return;
+  // Available Khu phố List - Chỉ hiển thị 18 khu phố, loại bỏ Ban Thường trực
+  const availableKhuPhoList = useMemo(() => {
+    const kpList: string[] = [];
+    for (let i = 1; i <= 18; i++) {
+      kpList.push(`Khu phố ${i}`);
     }
+    return kpList;
+  }, []);
+
+  // Sync with Google Sheet Function
+  const fetchFromGoogleSheet = async (urlToUse?: string) => {
+    const targetUrl = urlToUse || syncStatus.webAppUrl;
+    if (!targetUrl) return;
+
+    setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang tải từ Google Sheet...' }));
 
     try {
-      setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang kiểm tra phiên bản dữ liệu...' }));
-      setDataFetchError(null);
+      const response = await fetch(targetUrl);
+      const result = await response.json();
 
-      // Đồng bộ dữ liệu trụ sở công khai ngầm ở background
-      fetchAndSyncHeadquartersData(targetUrl);
-
-      // 1. Kiểm tra DATA_VERSION nhẹ từ máy chủ
-      const versionRes = await getDataVersionApi(targetUrl);
-      const serverVersion = versionRes.data?.version || versionRes.version;
-      const localVersion = await getMetaValue('personnel_version');
-
-      // Nếu version trùng khớp và không phải bấm làm mới thủ công -> Không cần tải lại dataset
-      if (!isManual && serverVersion && localVersion && serverVersion === localVersion && personnelList.length > 0) {
-        setSyncStatus((prev) => ({
-          ...prev,
-          isLoading: false,
-          statusMessage: `Dữ liệu đồng bộ mới nhất (${serverVersion.substring(11, 19)})`,
-        }));
-        setIsLoadingData(false);
-        return;
-      }
-
-      // 2. Phiên bản khác hoặc làm mới thủ công -> Gọi Public/Protected API tương ứng
-      setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang tải danh bạ từ máy chủ...' }));
-      
-      const currentSession = getUserSession();
-      const res = currentSession && currentSession.role !== 'VIEWER'
-        ? await getPersonnelApi(targetUrl)
-        : await getPublicPersonnelApi(targetUrl);
-
-      if (res.success && Array.isArray(res.data)) {
-        setPersonnelList(res.data);
-        const newVer = serverVersion || res.version || new Date().toISOString();
-        await savePersonnelCache(res.data, newVer);
-        setDataVersion(newVer);
-        setDataFetchError(null);
-
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        setPersonnelList(result.data);
         const timeString = new Date().toLocaleTimeString('vi-VN');
         setSyncStatus({
           isConnected: true,
           webAppUrl: targetUrl,
           lastSynced: timeString,
-          statusMessage: `Cập nhật danh bạ thành công (${res.data.length} cán bộ) lúc ${timeString}`,
+          statusMessage: `Đã đồng bộ thành công lúc ${timeString}`,
           isLoading: false,
         });
       } else {
         setSyncStatus((prev) => ({
           ...prev,
           isLoading: false,
-          statusMessage: res.message || 'Không thể tải dữ liệu từ máy chủ.',
+          statusMessage: 'Google Sheet rỗng hoặc dữ liệu chưa đúng cấu trúc.',
         }));
-        if (personnelList.length === 0 && !hasExistingCache) {
-          setDataFetchError('Không thể tải dữ liệu. Vui lòng thử lại.');
-        }
       }
     } catch (err) {
-      console.error('fetchAndSyncData error:', err);
-      setSyncStatus((prev) => ({ ...prev, isLoading: false, statusMessage: 'Lỗi kết nối máy chủ.' }));
-      if (personnelList.length === 0 && !hasExistingCache) {
-        setDataFetchError('Không thể tải dữ liệu. Vui lòng thử lại.');
-      }
-    } finally {
-      setIsLoadingData(false);
+      console.error('Fetch Google Sheet error:', err);
+      setSyncStatus((prev) => ({
+        ...prev,
+        isLoading: false,
+        statusMessage: 'Lỗi kết nối. Vui lòng kiểm tra lại URL Apps Script.',
+      }));
     }
   };
 
-  // --- Initial Data Load from IndexedDB + Background Version Check ---
+  // Sync on startup if URL exists
   useEffect(() => {
-    async function initIndexedDBData() {
-      setIsLoadingData(true);
-      setDataFetchError(null);
-      try {
-        // Load cached headquarters list
-        const cachedHq = await getHeadquartersCache();
-        if (cachedHq && cachedHq.length > 0) {
-          setHeadquartersList(cachedHq);
-        }
-
-        const cachedPersonnel = await getPersonnelCache();
-        const localVer = await getMetaValue('personnel_version');
-        const hasCache = cachedPersonnel && cachedPersonnel.length > 0;
-        
-        if (hasCache) {
-          setPersonnelList(cachedPersonnel);
-          if (localVer) setDataVersion(localVer);
-          setIsLoadingData(false);
-        }
-
-        // Tự động kiểm tra version ngầm sau khi đã load cache IndexedDB
-        if (getApiUrl() && isOnline) {
-          await fetchAndSyncData(false, hasCache);
-        } else {
-          setIsLoadingData(false);
-          if (!hasCache && !isOnline) {
-            setDataFetchError('Không thể tải dữ liệu (Ngoại tuyến). Vui lòng kết nối mạng và thử lại.');
-          }
-        }
-      } catch (e) {
-        console.error('initIndexedDBData error:', e);
-        setIsLoadingData(false);
-      }
+    if (syncStatus.webAppUrl) {
+      fetchFromGoogleSheet();
     }
-
-    initIndexedDBData();
   }, []);
 
-  // --- Network Event Listeners ---
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      setSyncStatus((prev) => ({
-        ...prev,
-        statusMessage: '🟢 Đã kết nối Internet trở lại. Đang kiểm tra dữ liệu...',
-      }));
-      fetchAndSyncData(false, personnelList.length > 0);
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      setSyncStatus((prev) => ({
-        ...prev,
-        statusMessage: '⚠️ Đang ngoại tuyến (Offline PWA). Dữ liệu được dùng từ bộ nhớ IndexedDB.',
-      }));
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [personnelList.length]);
-
   const handleSaveAppsScriptUrl = (url: string) => {
-    setApiUrl(url);
+    localStorage.setItem('mt_apps_script_url', url);
     setSyncStatus((prev) => ({ ...prev, webAppUrl: url, isConnected: true }));
-    fetchAndSyncData(true, personnelList.length > 0);
+    fetchFromGoogleSheet(url);
   };
-
-  const handleImportExcel = (newPersonnel: Personnel[], mode: 'replace' | 'append') => {
-    const updated = mode === 'replace' ? newPersonnel : [...personnelList, ...newPersonnel];
-    setPersonnelList(updated);
-    savePersonnelCache(updated);
-  };
-
-  const handleResetToDefault = () => {
-    fetchAndSyncData(true, personnelList.length > 0);
-  };
-
-
-  // Available Khu phố List
-  const availableKhuPhoList = useMemo(() => {
-    const set = new Set<string>();
-    for (let i = 1; i <= 18; i++) {
-      set.add(`Khu phố ${i}`);
-    }
-    personnelList.forEach((p) => p.khuPho && set.add(p.khuPho));
-    return Array.from(set);
-  }, [personnelList]);
 
   // Fast Client-Side Memoized Filtering Logic
   const filteredPersonnelList = useMemo(() => {
     return personnelList.filter((p) => {
-      // 1. Smart Search Query
+      // 1. Smart Search Query (Accent-insensitive, diacritic tolerant & numerical shortcuts)
       if (filters.searchQuery.trim()) {
         const rawQ = filters.searchQuery.trim();
         const normQ = removeVietnameseTones(rawQ).toLowerCase();
         const digitsOnly = rawQ.replace(/\D/g, '');
 
+        // Normalized personnel fields
         const normName = removeVietnameseTones(p.hoTen).toLowerCase();
-        const phoneClean = (p.soDienThoai || '').replace(/\D/g, '');
-        const normAddress = removeVietnameseTones(p.diaChi || '').toLowerCase();
+        const phoneClean = p.soDienThoai.replace(/\D/g, '');
+        const normAddress = removeVietnameseTones(p.diaChi).toLowerCase();
         const normRole = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
         const normOther = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
         const normKP = removeVietnameseTones(p.khuPho || '').toLowerCase();
-        const kpDigits = (p.khuPho || '').replace(/\D/g, '');
+        const kpDigits = p.khuPho.replace(/\D/g, '');
 
+        // 1. Direct Name Match
         const matchName = normName.includes(normQ) || p.hoTen.toLowerCase().includes(rawQ.toLowerCase());
 
+        // 2. Khu Phố Match (e.g. searching "1", "KP1", "Khu phố 1")
         let matchKP = normKP.includes(normQ);
         if (!matchKP && /^\d{1,2}$/.test(rawQ)) {
           const parsedNum = parseInt(rawQ, 10);
@@ -342,10 +248,15 @@ export default function App() {
           }
         }
 
+        // 3. Phone Match (only when >= 3 digits)
         const matchPhone = digitsOnly.length >= 3 ? phoneClean.includes(digitsOnly) : false;
+
+        // 4. Role, Other Roles, Address
         const matchRole = normRole.includes(normQ);
         const matchOther = normOther.includes(normQ);
         const matchAddress = normAddress.includes(normQ);
+
+        // Explicit STT search only if "stt" is typed
         const matchSTT = normQ.startsWith('stt') && digitsOnly.length > 0 && String(p.stt) === digitsOnly;
 
         if (!matchName && !matchKP && !matchPhone && !matchRole && !matchOther && !matchAddress && !matchSTT) {
@@ -353,16 +264,18 @@ export default function App() {
         }
       }
 
-      // 2. Khu Phố
-      if (filters.selectedKhuPho !== 'ALL' && p.khuPho !== filters.selectedKhuPho) {
-        return false;
+      // 2. Khu Phố / Đơn vị - Loại bỏ logic lọc Ban Thường trực tại đây (đã có ở bộ lọc Ngành)
+      if (filters.selectedKhuPho !== 'ALL') {
+        if (p.khuPho !== filters.selectedKhuPho || isBanThuongTruc(p)) return false;
       }
 
       // 3. Chức danh Mặt trận
       if (filters.selectedChucDanh !== 'ALL') {
+        if (filters.selectedChucDanh === 'Chủ tịch' && !isBanThuongTruc(p)) return false;
+        if (filters.selectedChucDanh === 'Thường trực' && !isBanThuongTruc(p)) return false;
         if (filters.selectedChucDanh === 'Trưởng ban' && !isKeyLeader(p)) return false;
         if (filters.selectedChucDanh === 'Phó Trưởng ban' && !isDeputyLeader(p)) return false;
-        if (filters.selectedChucDanh === 'Thành viên' && (isKeyLeader(p) || isDeputyLeader(p))) return false;
+        if (filters.selectedChucDanh === 'Thành viên' && !isThanhVien(p)) return false;
       }
 
       // 4. Giới tính
@@ -376,125 +289,106 @@ export default function App() {
         return false;
       }
 
-      // 6. Đoàn thể
+      // 6. Ngành / Đoàn thể
       if (filters.selectedDoanThe !== 'ALL') {
-        const other = p.chucDanhKhac?.toLowerCase() || '';
-        const target = filters.selectedDoanThe.toLowerCase();
-        if (!other.includes(target)) return false;
+        if (filters.selectedDoanThe === 'BAN_THUONG_TRUC') {
+          if (!isBanThuongTruc(p)) return false;
+        } else {
+          // Xử lý lọc theo các Ngành/Đoàn thể khác (dựa trên từ khóa trong chucDanhKhac)
+          const other = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
+          
+          // Map các value từ ORGANIZATION_KEYWORDS sang từ khóa tìm kiếm
+          const orgKeywords: Record<string, string[]> = {
+            'PHU_NU': ['phu nu'],
+            'CUU_CHIEN_BINH': ['cuu chien binh'],
+            'DOAN_THANH_NIEN': ['doan thanh nien', 'chi doan'],
+            'NGUOI_CAO_TUOI': ['nguoi cao tuoi'],
+            'CHU_THAP_DO': ['chu thap do'],
+            'KHUYEN_HOC': ['khuyen hoc']
+          };
+
+          const keywords = orgKeywords[filters.selectedDoanThe];
+          if (keywords) {
+            if (!keywords.some(kw => other.includes(kw))) return false;
+          } else {
+            // Fallback cho các trường hợp khác nếu có
+            const target = removeVietnameseTones(filters.selectedDoanThe.toLowerCase());
+            if (!other.includes(target)) return false;
+          }
+        }
       }
 
       return true;
     }).sort((a, b) => {
+      // 1. Sort by Front role priority: Ban Thường trực (0) -> Trưởng ban (1) -> Phó Trưởng ban (2) -> Thành viên (3)
       const getRolePriority = (person: Personnel) => {
+        if (isBanThuongTruc(person)) return 0;
         if (isKeyLeader(person)) return 1;
         if (isDeputyLeader(person)) return 2;
         return 3;
       };
       const roleDiff = getRolePriority(a) - getRolePriority(b);
       if (roleDiff !== 0) return roleDiff;
+
+      // 2. Secondary sort: STT / original order
       return (a.stt || 0) - (b.stt || 0);
     });
   }, [personnelList, filters]);
 
-  // Handle Add/Edit Personnel (Protected Action)
+  // Handle Add/Edit Personnel
   const handleSavePersonnel = (person: Personnel) => {
-    if (!isOnline) {
-      alert('Không có kết nối Internet. Vui lòng kết nối mạng để thực hiện thao tác này.');
-      return;
-    }
-
-    if (!userSession || userSession.role === 'VIEWER') {
-      setIsAuthModalOpen(true);
-      return;
-    }
-
     let isUpdate = false;
-    const updatedList = (() => {
-      const existsIndex = personnelList.findIndex((p) => p.id === person.id);
+    setPersonnelList((prev) => {
+      const existsIndex = prev.findIndex((p) => p.id === person.id);
       if (existsIndex >= 0) {
         isUpdate = true;
-        const copy = [...personnelList];
-        copy[existsIndex] = person;
-        return copy;
+        const updated = [...prev];
+        updated[existsIndex] = person;
+        return updated;
       } else {
-        return [person, ...personnelList];
+        return [person, ...prev];
       }
-    })();
+    });
 
-    setPersonnelList(updatedList);
-    savePersonnelCache(updatedList);
-
-    if (getApiUrl()) {
-      if (isUpdate) {
-        updatePersonnelApi(person).then((res) => {
-          if (res.version) saveMetaValue('personnel_version', res.version);
-        }).catch((e) => console.error('Save API error:', e));
-      } else {
-        createPersonnelApi(person).then((res) => {
-          if (res.version) saveMetaValue('personnel_version', res.version);
-        }).catch((e) => console.error('Create API error:', e));
-      }
+    // If connected to Apps Script, send POST
+    if (syncStatus.webAppUrl) {
+      fetch(syncStatus.webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: isUpdate ? 'UPDATE' : 'ADD', data: person }),
+      }).catch((e) => console.log('POST AppsScript error:', e));
     }
   };
 
-  // Handle Delete Personnel (Protected Action)
+  // Handle Delete Personnel
   const handleDeletePersonnel = (person: Personnel) => {
-    if (!isOnline) {
-      alert('Không có kết nối Internet. Vui lòng kết nối mạng để thực hiện thao tác này.');
-      return;
-    }
+    setPersonnelList((prev) => prev.filter((p) => p.id !== person.id));
 
-    if (!userSession || userSession.role !== 'ADMIN') {
-      alert('Thao tác xóa cán bộ yêu cầu quyền ADMIN.');
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    const updatedList = personnelList.filter((p) => p.id !== person.id);
-    setPersonnelList(updatedList);
-    savePersonnelCache(updatedList);
-
-    if (getApiUrl()) {
-      deletePersonnelApi(person).then((res) => {
-        if (res.version) saveMetaValue('personnel_version', res.version);
-      }).catch((e) => console.error('Delete API error:', e));
+    if (syncStatus.webAppUrl) {
+      fetch(syncStatus.webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'DELETE', data: person }),
+      }).catch((e) => console.log('Delete AppsScript error:', e));
     }
   };
 
-  // Push all local personnel data to cloud server (Protected Action)
+  // Push all local personnel data to Google Sheet
   const handlePushAllToGoogleSheet = async () => {
-    if (!getApiUrl()) return;
-
-    if (!isOnline) {
-      alert('Không có kết nối Internet. Vui lòng kết nối mạng để thực hiện thao tác này.');
-      return;
-    }
-
-    if (!userSession || userSession.role !== 'ADMIN') {
-      alert('Thao tác ghi đè toàn bộ danh sách yêu cầu quyền ADMIN.');
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang lưu dữ liệu...' }));
-    
-    const res = await syncAllPersonnelApi(personnelList);
-    const timeString = new Date().toLocaleTimeString('vi-VN');
-
-    if (res.success) {
-      if (res.version) saveMetaValue('personnel_version', res.version);
+    if (!syncStatus.webAppUrl) return;
+    setSyncStatus((prev) => ({ ...prev, isLoading: true, statusMessage: 'Đang đẩy toàn bộ dữ liệu lên Google Sheet...' }));
+    try {
+      await fetch(syncStatus.webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'SYNC_ALL', list: personnelList }),
+      });
+      const timeString = new Date().toLocaleTimeString('vi-VN');
       setSyncStatus((prev) => ({
         ...prev,
         isLoading: false,
         lastSynced: timeString,
-        statusMessage: `Đã lưu thành công ${personnelList.length} nhân sự lúc ${timeString}!`,
+        statusMessage: `Đã đồng bộ toàn bộ ${personnelList.length} nhân sự lên Google Sheet thành công!`,
       }));
-    } else {
-      setSyncStatus((prev) => ({
-        ...prev,
-        isLoading: false,
-        statusMessage: res.message || 'Không thể lưu dữ liệu. Vui lòng thử lại.',
-      }));
+    } catch (e) {
+      setSyncStatus((prev) => ({ ...prev, isLoading: false, statusMessage: 'Lỗi kết nối tới Google Apps Script' }));
     }
   };
 
@@ -525,25 +419,15 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 pb-24 font-sans safe-mb-nav">
+    <div className="min-h-screen bg-slate-100 text-slate-800 pb-20 font-sans">
       
-      {/* Offline Alert Banner */}
-      {!isOnline && (
-        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-sm border-b border-amber-600">
-          <WifiOff className="w-4 h-4 shrink-0" />
-          <span>Bạn đang ngoại tuyến (Offline PWA). Dữ liệu đang xem được phục vụ từ bộ nhớ IndexedDB.</span>
-        </div>
-      )}
-
-      {/* Header Banner */}
+      {/* Official Government Header (Only shown in Directory/List view) */}
       {activeTab === 'LIST' && (
         <Header
           syncStatus={syncStatus}
-          isOnline={isOnline}
-          userSession={userSession}
           onOpenAppsScriptModal={() => setIsAppsScriptModalOpen(true)}
-          onOpenAuthModal={() => setIsAuthModalOpen(true)}
-          onRefreshData={() => fetchAndSyncData(true)}
+          onRefreshData={() => fetchFromGoogleSheet()}
+          onOpenFeedback={() => setActiveTab('FEEDBACK')}
           totalPersonnel={personnelList.length}
           totalKhuPho={18}
         />
@@ -551,31 +435,17 @@ export default function App() {
 
       {/* Main Responsive Body Container */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-5">
-
+        
         {/* Quick Action Toolbar */}
         {activeTab === 'LIST' && (
           <div className="flex flex-wrap items-center justify-end gap-2 mb-3.5">
-            {/* Export CSV Button */}
-            <button
-              onClick={handleExportCSV}
-              className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-colors"
-              title="Xuất file danh bạ CSV"
-            >
-              <Download className="w-3.5 h-3.5 text-slate-600" />
-              <span className="hidden sm:inline">XUẤT CSV</span>
-            </button>
-
             {/* Add Personnel Button */}
             <button
               onClick={() => {
-                if (!userSession || userSession.role === 'VIEWER') {
-                  setIsAuthModalOpen(true);
-                  return;
-                }
                 setEditingPersonnel(null);
                 setIsFormModalOpen(true);
               }}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-all active:scale-95"
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-all active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>THÊM CÁN BỘ</span>
@@ -588,7 +458,9 @@ export default function App() {
           <StatsOverview
             personnelList={personnelList}
             currentFilterType={
-              filters.selectedChucDanh === 'Trưởng ban'
+              filters.selectedDoanThe === 'BAN_THUONG_TRUC'
+                ? 'BTT'
+                : filters.selectedChucDanh === 'Trưởng ban'
                 ? 'TRUONG_BAN'
                 : filters.selectedChucDanh === 'Phó Trưởng ban'
                 ? 'PHO_BAN'
@@ -598,13 +470,43 @@ export default function App() {
             }
             onSelectQuickFilter={(type) => {
               if (type === 'ALL') {
-                setFilters({ ...filters, selectedChucDanh: 'ALL', onlyCapUy: false });
+                setFilters(prev => ({ ...prev, searchQuery: '', selectedKhuPho: 'ALL', selectedChucDanh: 'ALL', selectedDoanThe: 'ALL', onlyCapUy: false }));
+              } else if (type === 'BTT') {
+                setFilters(prev => ({
+                  ...prev,
+                  searchQuery: '',
+                  selectedKhuPho: 'ALL',
+                  selectedDoanThe: prev.selectedDoanThe === 'BAN_THUONG_TRUC' ? 'ALL' : 'BAN_THUONG_TRUC',
+                  selectedChucDanh: 'ALL',
+                  onlyCapUy: false,
+                }));
               } else if (type === 'TRUONG_BAN') {
-                setFilters({ ...filters, selectedChucDanh: 'Trưởng ban', onlyCapUy: false });
+                setFilters(prev => ({
+                  ...prev,
+                  searchQuery: '',
+                  selectedKhuPho: 'ALL',
+                  selectedDoanThe: 'ALL',
+                  selectedChucDanh: prev.selectedChucDanh === 'Trưởng ban' ? 'ALL' : 'Trưởng ban',
+                  onlyCapUy: false,
+                }));
               } else if (type === 'PHO_BAN') {
-                setFilters({ ...filters, selectedChucDanh: 'Phó Trưởng ban', onlyCapUy: false });
+                setFilters(prev => ({
+                  ...prev,
+                  searchQuery: '',
+                  selectedKhuPho: 'ALL',
+                  selectedDoanThe: 'ALL',
+                  selectedChucDanh: prev.selectedChucDanh === 'Phó Trưởng ban' ? 'ALL' : 'Phó Trưởng ban',
+                  onlyCapUy: false,
+                }));
               } else if (type === 'CAP_UY') {
-                setFilters({ ...filters, selectedChucDanh: 'ALL', onlyCapUy: true });
+                setFilters(prev => ({
+                  ...prev,
+                  searchQuery: '',
+                  selectedKhuPho: 'ALL',
+                  selectedDoanThe: 'ALL',
+                  selectedChucDanh: 'ALL',
+                  onlyCapUy: !prev.onlyCapUy,
+                }));
               }
             }}
           />
@@ -622,9 +524,8 @@ export default function App() {
                 setFilters({
                   searchQuery: '',
                   selectedKhuPho: 'ALL',
-                  selectedChucDanh: 'ALL',
-                  onlyCapUy: false,
                   selectedDoanThe: 'ALL',
+                  selectedGender: 'ALL',
                   sortBy: 'stt',
                 })
               }
@@ -634,28 +535,12 @@ export default function App() {
               personnelList={personnelList}
             />
 
-            {/* Content: Cards Grid or Table or Skeleton Loader or Error State */}
-            {(isLoadingData || (syncStatus.isLoading && personnelList.length === 0)) ? (
-              viewMode === 'GRID' ? <SkeletonGrid count={8} /> : <SkeletonTable />
-            ) : dataFetchError && personnelList.length === 0 ? (
-              <div className="bg-white p-12 rounded-xl text-center border border-amber-200 shadow-2xs space-y-3">
-                <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto text-xl font-bold">
-                  ⚠️
-                </div>
-                <p className="text-slate-800 font-bold text-sm">{dataFetchError}</p>
-                <button
-                  onClick={() => fetchAndSyncData(true, false)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider inline-flex items-center gap-1.5 shadow-2xs transition-colors"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Thử lại</span>
-                </button>
-              </div>
-            ) : viewMode === 'GRID' ? (
+            {/* Content: Cards Grid or Table */}
+            {viewMode === 'GRID' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
                 {filteredPersonnelList.length === 0 ? (
                   <div className="col-span-full bg-white p-12 rounded-xl text-center border border-slate-200">
-                    <p className="text-slate-500 font-medium">Không tìm thấy cán bộ phù hợp với bộ lọc hiện tại.</p>
+                    <p className="text-slate-500 font-medium">Không tìm thấy nhân sự phù hợp với từ khóa hoặc bộ lọc.</p>
                   </div>
                 ) : (
                   filteredPersonnelList.map((person) => (
@@ -663,7 +548,6 @@ export default function App() {
                       key={person.id}
                       personnel={person}
                       onSelectPerson={(p) => setSelectedPersonForCall(p)}
-                      onOpenAuthModal={() => setIsAuthModalOpen(true)}
                     />
                   ))
                 )}
@@ -672,15 +556,18 @@ export default function App() {
               <PersonnelTable
                 personnelList={filteredPersonnelList}
                 onSelectPerson={(p) => setSelectedPersonForCall(p)}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
               />
             )}
-
 
           </div>
         )}
 
-        {/* Tab 2: Red Sites View (Địa chỉ đỏ) */}
+        {/* Tab 2: Democratic Mailbox View (Hộp thư dân chủ cơ sở) */}
+        {activeTab === 'FEEDBACK' && (
+          <DemocraticMailboxView onBackToList={() => setActiveTab('LIST')} />
+        )}
+
+        {/* Tab 3: Red Sites View (Địa chỉ đỏ) */}
         {(activeTab === 'RED_SITES' || activeTab === 'NEWS') && (
           <RedSitesView
             redSitesList={redSitesList}
@@ -689,7 +576,7 @@ export default function App() {
           />
         )}
 
-        {/* Tab 3: Map & Headquarters View (PUBLIC READ OK) */}
+        {/* Tab 3: Map & Headquarters View */}
         {activeTab === 'MAP' && (
           <AdminMap
             headquartersList={headquartersList}
@@ -700,50 +587,20 @@ export default function App() {
           />
         )}
 
-        {/* Tab 4: Grassroots Democracy View (Hộp thư Dân chủ cơ sở) */}
-        {activeTab === 'FEEDBACK' && (
-          <GrassrootsDemocracyView />
-        )}
-
-        {/* Tab 4: Stats Mobile Tab */}
+        {/* Tab 5: Overview & Stats View (Tổng quan & Thống kê cơ cấu nhân sự) */}
         {activeTab === 'STATS' && (
-          <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
-            <h3 className="text-base font-bold font-anton text-red-950 border-b border-slate-200 pb-2">
-              THỐNG KÊ CHI TIẾT BAN CÔNG TÁC MẶT TRẬN 18 KHU PHỐ
-            </h3>
-            
-            <div className="space-y-3 text-xs sm:text-sm">
-              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                <span className="font-semibold text-slate-700">Tổng số Khu phố:</span>
-                <span className="font-mono font-bold text-red-900">18 Khu phố</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg border border-amber-200">
-                <span className="font-semibold text-amber-950">Tổng số Trưởng ban:</span>
-                <span className="font-mono font-bold text-amber-900">{personnelList.filter(isKeyLeader).length} đồng chí</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-amber-50/50 rounded-lg border border-amber-200/60">
-                <span className="font-semibold text-amber-900">Tổng số Phó Trưởng ban:</span>
-                <span className="font-mono font-bold text-amber-800">{personnelList.filter(isDeputyLeader).length} đồng chí</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-200">
-                <span className="font-semibold text-red-950">Đại diện Cấp ủy Chi bộ kiêm nhiệm:</span>
-                <span className="font-mono font-bold text-red-900">{personnelList.filter(isPartyOfficial).length} đồng chí</span>
-              </div>
-            </div>
-          </div>
+          <OverviewView
+            personnelList={personnelList}
+            headquartersList={headquartersList}
+            redSitesList={redSitesList}
+            onSelectKhuPho={(kp) => {
+              setFilters((prev) => ({ ...prev, selectedKhuPho: kp }));
+              setActiveTab('LIST');
+            }}
+          />
         )}
 
       </main>
-
-      {/* Auth Modal for Admin / Editor Sign In */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={(newSession) => {
-          setUserSessionState(newSession);
-          fetchAndSyncData(true);
-        }}
-      />
 
       {/* Quick Call & Contact Modal */}
       <QuickCallModal
@@ -761,7 +618,7 @@ export default function App() {
         onClose={() => setIsAppsScriptModalOpen(false)}
         syncStatus={syncStatus}
         onSaveUrl={handleSaveAppsScriptUrl}
-        onSyncNow={() => fetchAndSyncData(true)}
+        onSyncNow={() => fetchFromGoogleSheet()}
         onPushAll={handlePushAllToGoogleSheet}
       />
 

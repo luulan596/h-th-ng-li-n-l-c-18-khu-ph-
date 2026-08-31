@@ -79,10 +79,10 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
       <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
         
         {/* Header */}
-        <div className="bg-indigo-950 p-4 text-white flex items-center justify-between border-b border-indigo-900">
+        <div className="bg-gradient-to-r from-red-950 via-red-900 to-red-950 p-4 text-white flex items-center justify-between border-b-2 border-amber-500">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-amber-400" />
-            <h3 className="text-sm font-bold uppercase tracking-wider">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-amber-200">
               {editingPersonnel ? 'CẬP NHẬT THÔNG TIN NHÂN SỰ' : 'THÊM NHÂN SỰ MỚI VÀO DANH BẠ'}
             </h3>
           </div>
@@ -101,7 +101,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
               <select
                 value={formData.khuPho}
                 onChange={(e) => setFormData({ ...formData, khuPho: e.target.value })}
-                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-indigo-600 focus:outline-none text-xs font-medium"
+                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-red-600 focus:outline-none text-xs font-medium"
               >
                 {availableKhuPhoList.map((kp) => (
                   <option key={kp} value={kp}>{kp}</option>
@@ -115,10 +115,12 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
               <select
                 value={formData.chucDanhMatTran}
                 onChange={(e) => setFormData({ ...formData, chucDanhMatTran: e.target.value })}
-                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-indigo-600 focus:outline-none text-xs font-bold"
+                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-red-600 focus:outline-none text-xs font-bold"
               >
+                <option value="Chủ tịch UB.MTTQ phường">⭐ Chủ tịch UB.MTTQ phường</option>
+                <option value="Phó Chủ tịch UB.MTTQVN phường">⭐ Phó Chủ tịch UB.MTTQVN phường</option>
                 <option value="Trưởng ban">👑 Trưởng ban</option>
-                <option value="Phó Trưởng ban">⭐ Phó Trưởng ban</option>
+                <option value="Phó Trưởng ban">🎖️ Phó Trưởng ban</option>
                 <option value="Thành viên">Thành viên</option>
               </select>
             </div>
@@ -133,7 +135,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
               value={formData.hoTen}
               onChange={(e) => setFormData({ ...formData, hoTen: e.target.value })}
               placeholder="VD: Nguyễn Văn An"
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:border-indigo-600 focus:outline-none text-xs font-bold text-slate-900"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:border-red-600 focus:outline-none text-xs font-bold text-slate-900"
             />
           </div>
 
@@ -146,7 +148,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
                 value={formData.namSinhNam || ''}
                 onChange={(e) => setFormData({ ...formData, namSinhNam: e.target.value })}
                 placeholder="VD: 1968"
-                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-indigo-600 focus:outline-none text-xs"
+                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-red-600 focus:outline-none text-xs"
               />
             </div>
 
@@ -158,7 +160,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
                 value={formData.namSinhNu || ''}
                 onChange={(e) => setFormData({ ...formData, namSinhNu: e.target.value })}
                 placeholder="VD: 1970"
-                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-indigo-600 focus:outline-none text-xs"
+                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-red-600 focus:outline-none text-xs"
               />
             </div>
           </div>
@@ -172,7 +174,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
               value={formData.soDienThoai}
               onChange={(e) => setFormData({ ...formData, soDienThoai: e.target.value })}
               placeholder="VD: 0908808419"
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-slate-900 text-xs focus:border-indigo-600 focus:outline-none"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-slate-900 text-xs focus:border-red-600 focus:outline-none"
             />
           </div>
 
@@ -184,7 +186,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
               value={formData.chucDanhKhac}
               onChange={(e) => setFormData({ ...formData, chucDanhKhac: e.target.value })}
               placeholder="VD: Chi hội Trưởng Chi hội Cựu chiến binh / Bí thư Chi đoàn..."
-              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-indigo-600 focus:outline-none text-xs"
+              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-red-600 focus:outline-none text-xs"
             />
           </div>
 
@@ -196,7 +198,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
               value={formData.diaChi}
               onChange={(e) => setFormData({ ...formData, diaChi: e.target.value })}
               placeholder="VD: 1378/39 Võ Văn Kiệt"
-              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-indigo-600 focus:outline-none text-xs"
+              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:border-red-600 focus:outline-none text-xs"
             />
           </div>
 
@@ -207,7 +209,7 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
               id="isCapUy"
               checked={formData.isCapUy}
               onChange={(e) => setFormData({ ...formData, isCapUy: e.target.checked })}
-              className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600"
+              className="w-4 h-4 text-red-700 rounded border-slate-300 focus:ring-red-600"
             />
             <label htmlFor="isCapUy" className="font-bold text-red-700 text-xs flex items-center gap-1 cursor-pointer">
               <span>🏛️</span> Là Đại diện Cấp ủy Chi bộ Khu phố
@@ -225,9 +227,9 @@ export const PersonnelFormModal: React.FC<PersonnelFormModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase flex items-center gap-1.5 shadow"
+              className="px-5 py-2 bg-red-800 hover:bg-red-900 text-amber-100 rounded-lg text-xs font-bold uppercase flex items-center gap-1.5 shadow"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4 text-amber-300" />
               <span>{editingPersonnel ? 'Lưu thay đổi' : 'Thêm vào danh bạ'}</span>
             </button>
           </div>

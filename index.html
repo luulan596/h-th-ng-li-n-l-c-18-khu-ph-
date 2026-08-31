@@ -2,18 +2,15 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#991b1b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Mặt Trận 18 KP" />
-    <meta name="description" content="WebApp Quản lý và Liên lạc Ban Công tác Mặt trận 18 Khu phố Phường Bình Tiên" />
-    
-    <title>Danh Bạ Nhân Sự Mặt Trận Tổ Quốc 18 Khu Phố</title>
-    
+    <meta name="apple-mobile-web-app-title" content="MTTQ Bình Tiên" />
     <link rel="icon" type="image/svg+xml" href="/mat_tran_logo.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
+    <link rel="apple-touch-icon" href="/mat_tran_logo.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Mặt Trận Tổ Quốc Việt Nam Phường Bình Tiên</title>
     <script>
       (function() {
         try {
@@ -38,11 +35,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- SheetJS for Excel (.xlsx, .xls) import -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   </head>
-  <body class="bg-slate-50 text-slate-800 antialiased font-sans selection:bg-red-900 selection:text-amber-200 overflow-x-hidden">
+  <body class="bg-slate-50 text-slate-800 antialiased font-sans selection:bg-red-900 selection:text-amber-200">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
 

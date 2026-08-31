@@ -1,6 +1,82 @@
 import { Personnel, Headquarters, NewsItem, RedSite } from '../types';
 
+export const BAN_THUONG_TRUC_DATA: Personnel[] = [
+  {
+    id: 'btt-1',
+    stt: 1,
+    khuPho: 'Ban Thường trực',
+    hoTen: 'Nguyễn Thị Kim Cúc',
+    namSinhNam: '',
+    namSinhNu: 1978,
+    chucDanhMatTran: 'Chủ tịch UB.MTTQ phường',
+    chucDanhKhac: 'Ủy viên Ban Thường vụ Đảng ủy',
+    diaChi: 'Trụ sở Đảng ủy - HĐND - UBND - UB.MTTQ Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0903987654',
+    isCapUy: true,
+    ghiChu: 'Phụ trách chung'
+  },
+  {
+    id: 'btt-2',
+    stt: 2,
+    khuPho: 'Ban Thường trực',
+    hoTen: 'Lê Hoàng Phúc',
+    namSinhNam: 1982,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Chủ tịch UB.MTTQVN phường',
+    chucDanhKhac: 'Đảng ủy viên',
+    diaChi: 'Trụ sở UB.MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0908123789',
+    isCapUy: true,
+    ghiChu: 'Phụ trách phong trào thi đua yêu nước, Dân tộc - Tôn giáo'
+  },
+  {
+    id: 'btt-3',
+    stt: 3,
+    khuPho: 'Ban Thường trực',
+    hoTen: 'Phạm Minh Tâm',
+    namSinhNam: 1985,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Chủ tịch UB.MTTQVN phường',
+    chucDanhKhac: 'Đảng viên',
+    diaChi: 'Trụ sở UB.MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0918456123',
+    isCapUy: false,
+    ghiChu: 'Phụ trách Giám sát, Phản biện xã hội & Tuyên truyền pháp luật'
+  },
+  {
+    id: 'btt-4',
+    stt: 4,
+    khuPho: 'Ban Thường trực',
+    hoTen: 'Trần Thị Mỹ Linh',
+    namSinhNam: '',
+    namSinhNu: 1988,
+    chucDanhMatTran: 'Phó Chủ tịch UB.MTTQVN phường',
+    chucDanhKhac: 'Đảng ủy viên, Chủ tịch Hội LHPN Phường',
+    diaChi: 'Trụ sở UB.MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0938567234',
+    isCapUy: true,
+    ghiChu: 'Phụ trách công tác Phụ nữ & Quỹ Vì người nghèo'
+  },
+  {
+    id: 'btt-5',
+    stt: 5,
+    khuPho: 'Ban Thường trực',
+    hoTen: 'Võ Văn Thành',
+    namSinhNam: 1980,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Chủ tịch UB.MTTQVN phường',
+    chucDanhKhac: 'Chủ tịch Hội Cựu chiến binh Phường',
+    diaChi: 'Trụ sở UB.MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0909678345',
+    isCapUy: false,
+    ghiChu: 'Phụ trách công tác Cựu chiến binh, An ninh cơ sở & Thanh tra nhân dân'
+  }
+];
+
 export const INITIAL_PERSONNEL_DATA: Personnel[] = [
+  // --- BAN THƯỜNG TRỰC ỦY BAN MTTQ VIỆT NAM PHƯỜNG BÌNH TIÊN (5 ĐỒNG CHÍ) ---
+  ...BAN_THUONG_TRUC_DATA,
+
   // --- KHU PHỐ 1 ---
   {
     id: 'kp1-1',
@@ -10,10 +86,10 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     namSinhNam: 1968,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '120/12 Võ Văn Kiệt',
     soDienThoai: '0903123456',
-    isCapUy: true
+    isCapUy: false
   },
   {
     id: 'kp1-2',
@@ -116,10 +192,10 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     namSinhNam: 1995,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '165/6B23 Văn Thân',
     soDienThoai: '0784322394',
-    isCapUy: true
+    isCapUy: false
   },
   {
     id: 'kp2-10',
@@ -222,10 +298,10 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     namSinhNam: '',
     namSinhNu: 1959,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '34/3A Bình Tây',
     soDienThoai: '0344613579',
-    isCapUy: true
+    isCapUy: false
   },
   {
     id: 'kp3-18',
@@ -280,7 +356,7 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     isCapUy: false
   },
 
-  // --- KHU PHỐ 4 đến KHU PHỐ 18 Sample Data ---
+  // --- KHU PHỐ 4 ---
   {
     id: 'kp4-22',
     stt: 22,
@@ -289,10 +365,10 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     namSinhNam: 1966,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '102 Bãi Sậy',
     soDienThoai: '0909112233',
-    isCapUy: true
+    isCapUy: false
   },
   {
     id: 'kp4-23',
@@ -320,6 +396,8 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     soDienThoai: '0913998877',
     isCapUy: true
   },
+
+  // --- KHU PHỐ 5 ---
   {
     id: 'kp5-25',
     stt: 25,
@@ -328,10 +406,10 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     namSinhNam: '',
     namSinhNu: 1963,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '210 Phạm Văn Chí',
     soDienThoai: '0903776655',
-    isCapUy: true
+    isCapUy: false
   },
   {
     id: 'kp5-26',
@@ -359,6 +437,8 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     soDienThoai: '0908332211',
     isCapUy: true
   },
+
+  // --- KHU PHỐ 6 ---
   {
     id: 'kp6-28',
     stt: 28,
@@ -367,10 +447,10 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     namSinhNam: 1965,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '89 Hậu Giang',
     soDienThoai: '0918445522',
-    isCapUy: true
+    isCapUy: false
   },
   {
     id: 'kp6-29',
@@ -386,164 +466,512 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
     isCapUy: false
   },
   {
-    id: 'kp7-30',
+    id: 'kp6-30',
     stt: 30,
+    khuPho: 'Khu phố 6',
+    hoTen: 'Nguyễn Văn Hậu',
+    namSinhNam: 1962,
+    namSinhNu: '',
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Bí thư Chi bộ)',
+    diaChi: '76 Hậu Giang',
+    soDienThoai: '0903881122',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 7 ---
+  {
+    id: 'kp7-31',
+    stt: 31,
     khuPho: 'Khu phố 7',
     hoTen: 'Trương Công Danh',
     namSinhNam: 1970,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '45/8 Minh Phụng',
     soDienThoai: '0903112299',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp8-31',
-    stt: 31,
+    id: 'kp7-32',
+    stt: 32,
+    khuPho: 'Khu phố 7',
+    hoTen: 'Vũ Thị Thanh Thảo',
+    namSinhNam: '',
+    namSinhNu: 1974,
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Phụ nữ',
+    diaChi: '52 Minh Phụng',
+    soDienThoai: '0908552233',
+    isCapUy: false
+  },
+  {
+    id: 'kp7-33',
+    stt: 33,
+    khuPho: 'Khu phố 7',
+    hoTen: 'Phan Thị Mỹ Hạnh',
+    namSinhNam: '',
+    namSinhNu: 1966,
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Phó Bí thư Chi bộ)',
+    diaChi: '68 Minh Phụng',
+    soDienThoai: '0918334455',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 8 ---
+  {
+    id: 'kp8-34',
+    stt: 34,
     khuPho: 'Khu phố 8',
     hoTen: 'Nguyễn Thị Tuyết',
     namSinhNam: '',
     namSinhNu: 1967,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '230 Nguyễn Văn Luông',
     soDienThoai: '0908778899',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp9-32',
-    stt: 32,
+    id: 'kp8-35',
+    stt: 35,
+    khuPho: 'Khu phố 8',
+    hoTen: 'Hoàng Văn Phúc',
+    namSinhNam: 1971,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Cựu chiến binh',
+    diaChi: '215 Nguyễn Văn Luông',
+    soDienThoai: '0903667788',
+    isCapUy: false
+  },
+  {
+    id: 'kp8-36',
+    stt: 36,
+    khuPho: 'Khu phố 8',
+    hoTen: 'Huỳnh Văn Lộc',
+    namSinhNam: 1963,
+    namSinhNu: '',
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Bí thư Chi bộ)',
+    diaChi: '240 Nguyễn Văn Luông',
+    soDienThoai: '0912556677',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 9 ---
+  {
+    id: 'kp9-37',
+    stt: 37,
     khuPho: 'Khu phố 9',
     hoTen: 'Đỗ Hữu Tài',
     namSinhNam: 1961,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '56 Chợ Lớn',
     soDienThoai: '0912334455',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp10-33',
-    stt: 33,
+    id: 'kp9-38',
+    stt: 38,
+    khuPho: 'Khu phố 9',
+    hoTen: 'Lê Thị Thu',
+    namSinhNam: '',
+    namSinhNu: 1973,
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Phụ nữ',
+    diaChi: '68 Chợ Lớn',
+    soDienThoai: '0988443322',
+    isCapUy: false
+  },
+  {
+    id: 'kp9-39',
+    stt: 39,
+    khuPho: 'Khu phố 9',
+    hoTen: 'Trương Kim Phụng',
+    namSinhNam: '',
+    namSinhNu: 1965,
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Phó Bí thư Chi bộ)',
+    diaChi: '80 Chợ Lớn',
+    soDienThoai: '0908665511',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 10 ---
+  {
+    id: 'kp10-40',
+    stt: 40,
     khuPho: 'Khu phố 10',
     hoTen: 'Bùi Kim Phượng',
     namSinhNam: '',
     namSinhNu: 1971,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '78 Đặng Nguyên Cẩn',
     soDienThoai: '0988665544',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp11-34',
-    stt: 34,
+    id: 'kp10-41',
+    stt: 41,
+    khuPho: 'Khu phố 10',
+    hoTen: 'Nguyễn Văn Đức',
+    namSinhNam: 1968,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Cựu chiến binh',
+    diaChi: '90 Đặng Nguyên Cẩn',
+    soDienThoai: '0903778811',
+    isCapUy: false
+  },
+  {
+    id: 'kp10-42',
+    stt: 42,
+    khuPho: 'Khu phố 10',
+    hoTen: 'Lê Văn Dũng',
+    namSinhNam: 1959,
+    namSinhNu: '',
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Bí thư Chi bộ)',
+    diaChi: '102 Đặng Nguyên Cẩn',
+    soDienThoai: '0918112244',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 11 ---
+  {
+    id: 'kp11-43',
+    stt: 43,
     khuPho: 'Khu phố 11',
     hoTen: 'Lương Văn Thành',
     namSinhNam: 1969,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '12 Tân Hòa Đông',
     soDienThoai: '0903554433',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp12-35',
-    stt: 35,
+    id: 'kp11-44',
+    stt: 44,
+    khuPho: 'Khu phố 11',
+    hoTen: 'Phạm Thị Thúy',
+    namSinhNam: '',
+    namSinhNu: 1976,
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Phụ nữ',
+    diaChi: '24 Tân Hòa Đông',
+    soDienThoai: '0977221155',
+    isCapUy: false
+  },
+  {
+    id: 'kp11-45',
+    stt: 45,
+    khuPho: 'Khu phố 11',
+    hoTen: 'Trần Thị Thanh Tâm',
+    namSinhNam: '',
+    namSinhNu: 1964,
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Phó Bí thư Chi bộ)',
+    diaChi: '36 Tân Hòa Đông',
+    soDienThoai: '0909445588',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 12 ---
+  {
+    id: 'kp12-46',
+    stt: 46,
     khuPho: 'Khu phố 12',
     hoTen: 'Dương Thị Loan',
     namSinhNam: '',
     namSinhNu: 1964,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '89 Bà Hom',
     soDienThoai: '0918776655',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp13-36',
-    stt: 36,
+    id: 'kp12-47',
+    stt: 47,
+    khuPho: 'Khu phố 12',
+    hoTen: 'Nguyễn Văn Thịnh',
+    namSinhNam: 1972,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Cựu chiến binh',
+    diaChi: '105 Bà Hom',
+    soDienThoai: '0903334477',
+    isCapUy: false
+  },
+  {
+    id: 'kp12-48',
+    stt: 48,
+    khuPho: 'Khu phố 12',
+    hoTen: 'Nguyễn Thành Long',
+    namSinhNam: 1960,
+    namSinhNu: '',
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Bí thư Chi bộ)',
+    diaChi: '120 Bà Hom',
+    soDienThoai: '0913225588',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 13 ---
+  {
+    id: 'kp13-49',
+    stt: 49,
     khuPho: 'Khu phố 13',
     hoTen: 'Ngô Thanh Sơn',
     namSinhNam: 1973,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '145 An Dương Vương',
     soDienThoai: '0909887766',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp14-37',
-    stt: 37,
+    id: 'kp13-50',
+    stt: 50,
+    khuPho: 'Khu phố 13',
+    hoTen: 'Trần Thị Ngọc Bích',
+    namSinhNam: '',
+    namSinhNu: 1977,
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Phụ nữ',
+    diaChi: '160 An Dương Vương',
+    soDienThoai: '0988114477',
+    isCapUy: false
+  },
+  {
+    id: 'kp13-51',
+    stt: 51,
+    khuPho: 'Khu phố 13',
+    hoTen: 'Võ Thị Thu Thủy',
+    namSinhNam: '',
+    namSinhNu: 1967,
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Phó Bí thư Chi bộ)',
+    diaChi: '175 An Dương Vương',
+    soDienThoai: '0908226699',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 14 ---
+  {
+    id: 'kp14-52',
+    stt: 52,
     khuPho: 'Khu phố 14',
     hoTen: 'Hồ Thị Thanh',
     namSinhNam: '',
     namSinhNu: 1968,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '201 Lý Chiêu Hoàng',
     soDienThoai: '0987112233',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp15-38',
-    stt: 38,
+    id: 'kp14-53',
+    stt: 53,
+    khuPho: 'Khu phố 14',
+    hoTen: 'Lâm Văn Hùng',
+    namSinhNam: 1970,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Cựu chiến binh',
+    diaChi: '215 Lý Chiêu Hoàng',
+    soDienThoai: '0903889922',
+    isCapUy: false
+  },
+  {
+    id: 'kp14-54',
+    stt: 54,
+    khuPho: 'Khu phố 14',
+    hoTen: 'Đặng Quốc Tuấn',
+    namSinhNam: 1961,
+    namSinhNu: '',
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Bí thư Chi bộ)',
+    diaChi: '230 Lý Chiêu Hoàng',
+    soDienThoai: '0912778833',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 15 ---
+  {
+    id: 'kp15-55',
+    stt: 55,
     khuPho: 'Khu phố 15',
     hoTen: 'Đoàn Văn Nam',
     namSinhNam: 1967,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '67 Phạm Đình Hổ',
     soDienThoai: '0903221100',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp16-39',
-    stt: 39,
+    id: 'kp15-56',
+    stt: 56,
+    khuPho: 'Khu phố 15',
+    hoTen: 'Đặng Thị Mai',
+    namSinhNam: '',
+    namSinhNu: 1975,
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Phụ nữ',
+    diaChi: '80 Phạm Đình Hổ',
+    soDienThoai: '0988336699',
+    isCapUy: false
+  },
+  {
+    id: 'kp15-57',
+    stt: 57,
+    khuPho: 'Khu phố 15',
+    hoTen: 'Phạm Thị Mai',
+    namSinhNam: '',
+    namSinhNu: 1966,
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Phó Bí thư Chi bộ)',
+    diaChi: '95 Phạm Đình Hổ',
+    soDienThoai: '0909556633',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 16 ---
+  {
+    id: 'kp16-58',
+    stt: 58,
     khuPho: 'Khu phố 16',
     hoTen: 'Lâm Thị Ngọc',
     namSinhNam: '',
     namSinhNu: 1970,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '92 Lê Quang Sung',
     soDienThoai: '0919443322',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp17-40',
-    stt: 40,
+    id: 'kp16-59',
+    stt: 59,
+    khuPho: 'Khu phố 16',
+    hoTen: 'Hoàng Văn Tiến',
+    namSinhNam: 1969,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Cựu chiến binh',
+    diaChi: '108 Lê Quang Sung',
+    soDienThoai: '0903114488',
+    isCapUy: false
+  },
+  {
+    id: 'kp16-60',
+    stt: 60,
+    khuPho: 'Khu phố 16',
+    hoTen: 'Trần Đình Trọng',
+    namSinhNam: 1963,
+    namSinhNu: '',
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Bí thư Chi bộ)',
+    diaChi: '125 Lê Quang Sung',
+    soDienThoai: '0918337722',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 17 ---
+  {
+    id: 'kp17-61',
+    stt: 61,
     khuPho: 'Khu phố 17',
     hoTen: 'Trịnh Quốc Bảo',
     namSinhNam: 1966,
     namSinhNu: '',
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '115 Tháp Mười',
     soDienThoai: '0908221144',
-    isCapUy: true
+    isCapUy: false
   },
   {
-    id: 'kp18-41',
-    stt: 41,
+    id: 'kp17-62',
+    stt: 62,
+    khuPho: 'Khu phố 17',
+    hoTen: 'Nguyễn Thị Ngọc Lan',
+    namSinhNam: '',
+    namSinhNu: 1974,
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Phụ nữ',
+    diaChi: '130 Tháp Mười',
+    soDienThoai: '0988225577',
+    isCapUy: false
+  },
+  {
+    id: 'kp17-63',
+    stt: 63,
+    khuPho: 'Khu phố 17',
+    hoTen: 'Lê Hoàng Oanh',
+    namSinhNam: '',
+    namSinhNu: 1967,
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Phó Bí thư Chi bộ)',
+    diaChi: '145 Tháp Mười',
+    soDienThoai: '0903669911',
+    isCapUy: true
+  },
+
+  // --- KHU PHỐ 18 ---
+  {
+    id: 'kp18-64',
+    stt: 64,
     khuPho: 'Khu phố 18',
     hoTen: 'Vũ Thị Minh Khai',
     namSinhNam: '',
     namSinhNu: 1962,
     chucDanhMatTran: 'Trưởng ban',
-    chucDanhKhac: 'Chi ủy viên',
+    chucDanhKhac: '',
     diaChi: '304 Trang Tử',
     soDienThoai: '0988554411',
+    isCapUy: false
+  },
+  {
+    id: 'kp18-65',
+    stt: 65,
+    khuPho: 'Khu phố 18',
+    hoTen: 'Phạm Văn Dân',
+    namSinhNam: 1970,
+    namSinhNu: '',
+    chucDanhMatTran: 'Phó Trưởng ban',
+    chucDanhKhac: 'Chi hội Trưởng Chi hội Cựu chiến binh',
+    diaChi: '320 Trang Tử',
+    soDienThoai: '0903447700',
+    isCapUy: false
+  },
+  {
+    id: 'kp18-66',
+    stt: 66,
+    khuPho: 'Khu phố 18',
+    hoTen: 'Ngô Văn Cường',
+    namSinhNam: 1961,
+    namSinhNu: '',
+    chucDanhMatTran: 'Thành viên',
+    chucDanhKhac: 'Đại diện cấp ủy khu phố (Bí thư Chi bộ)',
+    diaChi: '335 Trang Tử',
+    soDienThoai: '0912668844',
     isCapUy: true
   }
 ];
 
-// Dữ liệu dự phòng (Fallback Offline) cho Trụ sở & Cơ quan khi chưa từng kết nối máy chủ
 export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
   {
     id: 'ubnd-phuong',
@@ -606,10 +1034,10 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     moTaChucNang: 'Chăm sóc sức khỏe ban đầu, tiêm chủng mở rộng, phòng chống dịch bệnh và khám BHYT.'
   },
 
-  // --- TRỤ SỞ CÁC KHU PHỐ ---
+  // --- TRỤ SỞ 18 KHU PHỐ PHƯỜNG BÌNH TIÊN ---
   {
     id: 'ts-kp1',
-    tenTruSo: 'Nhà Văn hóa / Trụ sở Khu phố 1',
+    tenTruSo: 'Trụ sở Khu phố 1',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 1',
     diaChi: '1378/30 Võ Văn Kiệt, Phường Bình Tiên, TP. Hồ Chí Minh',
@@ -622,23 +1050,23 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
   },
   {
     id: 'ts-kp2',
-    tenTruSo: 'Nhà Văn hóa / Trụ sở Khu phố 2',
+    tenTruSo: 'Trụ sở Khu phố 2',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 2',
-    diaChi: '165 Văn Thân, Phường Bình Tiên, TP. Hồ Chí Minh',
+    diaChi: '165/6B23 Văn Thân, Phường Bình Tiên, TP. Hồ Chí Minh',
     soDienThoai: '0784322394',
     gioLamViec: '08:00 - 17:00',
     canBoPhuTrach: 'Trần Thanh Lâm',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP2',
     toaDo: { lat: 10.7495, lng: 106.6531 },
-    moTaChucNang: 'Điểm sinh hoạt văn hóa, tiếp nhận kiến nghị cử trí và sinh hoạt Nhân dân Khu phố 2.'
+    moTaChucNang: 'Điểm sinh hoạt văn hóa, tiếp nhận kiến nghị cử tri và sinh hoạt Nhân dân Khu phố 2.'
   },
   {
     id: 'ts-kp3',
-    tenTruSo: 'Nhà Văn hóa / Trụ sở Khu phố 3',
+    tenTruSo: 'Trụ sở Khu phố 3',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 3',
-    diaChi: '34 Bình Tây, Phường Bình Tiên, TP. Hồ Chí Minh',
+    diaChi: '34/3A Bình Tây, Phường Bình Tiên, TP. Hồ Chí Minh',
     soDienThoai: '0344613579',
     gioLamViec: '08:00 - 17:00',
     canBoPhuTrach: 'Phạm Thị Thức',
@@ -690,12 +1118,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 7',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 7',
-    diaChi: '120 Gia Phú, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0908123777',
+    diaChi: '45/8 Minh Phụng, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0903112299',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Nguyễn Văn Minh',
+    canBoPhuTrach: 'Trương Công Danh',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP7',
-    toaDo: { lat: 10.7490, lng: 106.6545 },
+    toaDo: { lat: 10.7508, lng: 106.6465 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 7.'
   },
   {
@@ -703,12 +1131,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 8',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 8',
-    diaChi: '45 Văn Thân, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0913987654',
+    diaChi: '230 Nguyễn Văn Luông, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0908778899',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Lê Văn Tám',
+    canBoPhuTrach: 'Nguyễn Thị Tuyết',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP8',
-    toaDo: { lat: 10.7502, lng: 106.6538 },
+    toaDo: { lat: 10.7475, lng: 106.6450 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 8.'
   },
   {
@@ -716,12 +1144,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 9',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 9',
-    diaChi: '112 Hậu Giang, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0903112244',
+    diaChi: '56 Chợ Lớn, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0912334455',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Trần Thị Kim',
+    canBoPhuTrach: 'Đỗ Hữu Tài',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP9',
-    toaDo: { lat: 10.7515, lng: 106.6488 },
+    toaDo: { lat: 10.7460, lng: 106.6472 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 9.'
   },
   {
@@ -729,12 +1157,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 10',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 10',
-    diaChi: '56 Bình Tây, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0989556677',
+    diaChi: '78 Đặng Nguyên Cẩn, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0988665544',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Vũ Quốc Hùng',
+    canBoPhuTrach: 'Bùi Kim Phượng',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP10',
-    toaDo: { lat: 10.7512, lng: 106.6500 },
+    toaDo: { lat: 10.7532, lng: 106.6448 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 10.'
   },
   {
@@ -742,12 +1170,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 11',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 11',
-    diaChi: '42 Mai Xuân Thưởng, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0908778899',
+    diaChi: '12 Tân Hòa Đông, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0903554433',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Đỗ Thị Huệ',
+    canBoPhuTrach: 'Lương Văn Thành',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP11',
-    toaDo: { lat: 10.7520, lng: 106.6510 },
+    toaDo: { lat: 10.7540, lng: 106.6478 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 11.'
   },
   {
@@ -755,12 +1183,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 12',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 12',
-    diaChi: '88 Cao Văn Lầu, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0918334455',
+    diaChi: '89 Bà Hom, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0918776655',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Phạm Hồng Sơn',
+    canBoPhuTrach: 'Dương Thị Loan',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP12',
-    toaDo: { lat: 10.7480, lng: 106.6528 },
+    toaDo: { lat: 10.7520, lng: 106.6435 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 12.'
   },
   {
@@ -768,12 +1196,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 13',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 13',
-    diaChi: '250 Trang Tử, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0903998811',
+    diaChi: '145 An Dương Vương, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0909887766',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Bùi Thị Loan',
+    canBoPhuTrach: 'Ngô Thanh Sơn',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP13',
-    toaDo: { lat: 10.7528, lng: 106.6482 },
+    toaDo: { lat: 10.7452, lng: 106.6498 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 13.'
   },
   {
@@ -781,12 +1209,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 14',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 14',
-    diaChi: '180 Lê Quang Sung, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0912443322',
+    diaChi: '201 Lý Chiêu Hoàng, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0987112233',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Lương Văn Thành',
+    canBoPhuTrach: 'Hồ Thị Thanh',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP14',
-    toaDo: { lat: 10.7532, lng: 106.6490 },
+    toaDo: { lat: 10.7438, lng: 106.6460 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 14.'
   },
   {
@@ -794,12 +1222,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 15',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 15',
-    diaChi: '35 Tháp Mười, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0908556611',
+    diaChi: '67 Phạm Đình Hổ, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0903221100',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Ngô Thanh Hải',
+    canBoPhuTrach: 'Đoàn Văn Nam',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP15',
-    toaDo: { lat: 10.7535, lng: 106.6505 },
+    toaDo: { lat: 10.7512, lng: 106.6545 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 15.'
   },
   {
@@ -807,12 +1235,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 16',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 16',
-    diaChi: '92 Phan Văn Khỏe, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0919223344',
+    diaChi: '92 Lê Quang Sung, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0919443322',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Hoàng Văn Phúc',
+    canBoPhuTrach: 'Lâm Thị Ngọc',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP16',
-    toaDo: { lat: 10.7540, lng: 106.6515 },
+    toaDo: { lat: 10.7538, lng: 106.6528 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 16.'
   },
   {
@@ -820,12 +1248,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 17',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 17',
-    diaChi: '15 Nguyễn Hữu Thận, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0903778811',
+    diaChi: '115 Tháp Mười, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0908221144',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Đinh Thiện Nhân',
+    canBoPhuTrach: 'Trịnh Quốc Bảo',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP17',
-    toaDo: { lat: 10.7522, lng: 106.6530 },
+    toaDo: { lat: 10.7522, lng: 106.6562 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 17.'
   },
   {
@@ -833,12 +1261,12 @@ export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
     tenTruSo: 'Trụ sở Khu phố 18',
     loaiTruSo: 'khu_pho',
     khuPhoThuocVong: 'Khu phố 18',
-    diaChi: '68 Ngô Nhân Tịnh, Phường Bình Tiên, TP. Hồ Chí Minh',
-    soDienThoai: '0918667788',
+    diaChi: '304 Trang Tử, Phường Bình Tiên, TP. Hồ Chí Minh',
+    soDienThoai: '0988554411',
     gioLamViec: '08:00 - 17:00',
-    canBoPhuTrach: 'Huỳnh Văn Đức',
+    canBoPhuTrach: 'Vũ Thị Minh Khai',
     chucVuCanBo: 'Trưởng Ban CT Mặt trận KP18',
-    toaDo: { lat: 10.7518, lng: 106.6540 },
+    toaDo: { lat: 10.7505, lng: 106.6575 },
     moTaChucNang: 'Trụ sở làm việc & sinh hoạt cộng đồng Khu phố 18.'
   }
 ];
@@ -896,7 +1324,7 @@ function doGet(e) {
       chucDanhKhac: chucDanhKhacStr,
       diaChi: row[6] || "",
       soDienThoai: rawPhone,
-      khuPho: row[8] || "",
+      khuPho: row[8] || "Khu phố 1",
       isCapUy: chucDanhKhacStr.toLowerCase().indexOf("bí thư") !== -1 || chucDanhKhacStr.toLowerCase().indexOf("cấp ủy") !== -1
     });
   }
@@ -927,7 +1355,7 @@ function doPost(e) {
         item.chucDanhKhac || "",
         item.diaChi || "",
         phoneStr,
-        item.khuPho || ""
+        item.khuPho || "Khu phố 1"
       ]);
       return createJsonResponse({ status: "success", message: "Đã thêm thành công vào Google Sheet" });
     }
@@ -955,7 +1383,7 @@ function doPost(e) {
           item.chucDanhKhac || "",
           item.diaChi || "",
           phoneVal,
-          item.khuPho || ""
+          item.khuPho || "Khu phố 1"
         ]]);
         return createJsonResponse({ status: "success", message: "Đã cập nhật dòng trong Google Sheet" });
       } else {
@@ -970,7 +1398,7 @@ function doPost(e) {
           item.chucDanhKhac || "",
           item.diaChi || "",
           pVal,
-          item.khuPho || ""
+          item.khuPho || "Khu phố 1"
         ]);
         return createJsonResponse({ status: "success", message: "Đã thêm mới do không tìm thấy dòng cần sửa" });
       }
@@ -1004,7 +1432,7 @@ function doPost(e) {
           p.chucDanhKhac || "",
           p.diaChi || "",
           p.soDienThoai ? "'" + String(p.soDienThoai).trim() : "",
-          p.khuPho || ""
+          p.khuPho || "Khu phố 1"
         ]);
       }
       return createJsonResponse({ status: "success", message: "Đã đồng bộ toàn bộ danh sách lên Google Sheet" });

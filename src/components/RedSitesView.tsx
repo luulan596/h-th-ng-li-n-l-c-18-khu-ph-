@@ -168,43 +168,44 @@ export const RedSitesView: React.FC<RedSitesViewProps> = ({
     <div className="max-w-6xl mx-auto space-y-5 my-2 pb-12 px-2 sm:px-4">
       
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-red-900 via-red-800 to-amber-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-amber-500/30 relative overflow-hidden">
-        <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="p-1.5 bg-amber-400/20 rounded-lg text-amber-300">
-                <Landmark className="w-5 h-5" />
-              </span>
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-300 bg-red-950/60 px-2.5 py-0.5 rounded-full border border-amber-400/30">
-                Hành Trình Cách Mạng
-              </span>
+      <div className="bg-gradient-to-br from-red-950 via-red-900 to-amber-950 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-amber-500/30 relative overflow-hidden">
+        <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        {/* Top Title & Actions */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-amber-400/20 rounded-xl text-amber-300 border border-amber-400/30 shrink-0">
+              <Landmark className="w-5 h-5" />
             </div>
-            <h2 className="text-lg sm:text-2xl font-black text-amber-100 uppercase tracking-tight">
-              ĐỊA CHỈ ĐỎ - DI TÍCH LỊCH SỬ CÁCH MẠNG
-            </h2>
-            <p className="text-xs sm:text-sm text-amber-100/80 mt-1 max-w-2xl font-medium">
-              Tra cứu thông tin, hình ảnh tư liệu, video và chỉ đường vị trí đến các Địa chỉ đỏ, Di tích lịch sử văn hóa trên địa bàn và vùng lân cận.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-300 bg-red-950/80 px-2 py-0.5 rounded-md border border-amber-400/30">
+                  Hành trình Lịch sử
+                </span>
+              </div>
+              <h2 className="text-base sm:text-xl font-black text-amber-100 uppercase tracking-tight mt-0.5">
+                ĐỊA CHỈ ĐỎ & DI TÍCH LỊCH SỬ
+              </h2>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-stretch md:self-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {onResetRedSites && (
               <button
                 onClick={onResetRedSites}
-                className="px-3 py-2 bg-red-950/80 hover:bg-red-900 text-amber-200 font-bold text-xs uppercase tracking-wider rounded-xl border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                title="Khôi phục 3 Di tích Mặc định"
+                className="p-2 sm:px-3 sm:py-1.5 bg-red-950/80 hover:bg-red-900 text-amber-200 font-bold text-xs uppercase tracking-wider rounded-xl border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0"
+                title="Khôi phục Di tích Mặc định"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
-                <span className="hidden sm:inline">Khôi phục Mặc định</span>
+                <RotateCcw className="w-4 h-4 text-amber-300" />
+                <span className="hidden sm:inline">Khôi phục</span>
               </button>
             )}
             {onAddRedSite && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex-1 md:flex-none px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-red-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-red-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 shrink-0" />
                 <span>Thêm Địa Chỉ Đỏ</span>
               </button>
             )}
@@ -212,32 +213,35 @@ export const RedSitesView: React.FC<RedSitesViewProps> = ({
         </div>
 
         {/* Filter and Search Toolbar */}
-        <div className="mt-5 pt-4 border-t border-amber-500/20 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="mt-4 pt-3.5 border-t border-amber-500/20 flex flex-col gap-2.5">
           {/* Search Box */}
-          <div className="relative md:col-span-1">
+          <div className="relative w-full">
             <Search className="w-4 h-4 text-amber-200/70 absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm theo tên địa danh, địa chỉ..."
+              placeholder="Tìm kiếm theo tên địa danh, địa chỉ di tích..."
               className="w-full bg-red-950/70 text-amber-100 placeholder-amber-200/50 text-xs pl-9 pr-3 py-2 rounded-xl border border-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
           </div>
 
-          {/* Category Chips with icons */}
-          <div className="md:col-span-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          {/* Category Chips - 2x2 grid on mobile, flex row on tablet/desktop */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-stretch sm:items-center gap-1.5 pt-0.5">
             {categories.map((cat) => {
-              let label = cat;
+              let label = 'Tất cả';
               let icon = '🏛️';
               if (cat === 'ALL') {
-                label = 'Tất cả di tích';
+                label = 'Tất cả';
                 icon = '🏛️';
               } else if (cat.includes('Thành phố')) {
+                label = 'Cấp Thành phố';
                 icon = '⭐';
               } else if (cat.includes('Quốc gia Đặc biệt')) {
+                label = 'QG Đặc biệt';
                 icon = '🏆';
               } else if (cat.includes('Quốc gia')) {
+                label = 'Cấp Quốc gia';
                 icon = '🚩';
               }
 
@@ -245,14 +249,14 @@ export const RedSitesView: React.FC<RedSitesViewProps> = ({
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 text-center ${
                     selectedCategory === cat
                       ? 'bg-amber-400 text-red-950 font-bold shadow-md'
-                      : 'bg-red-950/50 text-amber-200 hover:bg-red-950/80 border border-amber-500/20'
+                      : 'bg-red-950/60 text-amber-200 hover:bg-red-950/90 border border-amber-500/20'
                   }`}
                 >
-                  <span>{icon}</span>
-                  <span>{label}</span>
+                  <span className="text-sm shrink-0">{icon}</span>
+                  <span className="truncate">{label}</span>
                 </button>
               );
             })}

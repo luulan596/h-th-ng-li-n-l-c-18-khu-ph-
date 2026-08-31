@@ -20,31 +20,59 @@ export function removeVietnameseTones(str: string): string {
   return result.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-export function isKeyLeader(p: Personnel): boolean {
+export function isBanThuongTruc(p: Personnel): boolean {
+  if (p.khuPho === 'Ban Thường trực' || p.id?.startsWith('btt-')) return true;
   const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
-  const cdk = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
-  const isTruong = cd.includes('truong') || cd.includes('tb') || cdk.includes('truong ban');
+  return cd.includes('chu tich') || cd.includes('thuong truc');
+}
+
+export function isKeyLeader(p: Personnel): boolean {
+  if (isBanThuongTruc(p)) return false;
+  const cd = removeVietnameseTones(p.chucDanhMatTran || '').trim().toLowerCase();
+  const isTruong = cd === 'truong ban' || cd === 'tb' || cd === 'truong ban ctmt' || cd.startsWith('truong ban') || (cd.startsWith('truong') && !cd.includes('chi hoi'));
   const isPho = cd.includes('pho') || cd.includes('p.') || cd.startsWith('p ');
   return isTruong && !isPho;
 }
 
 export function isDeputyLeader(p: Personnel): boolean {
-  const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
-  const cdk = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
-  return cd.includes('pho') || cd.includes('p.') || cd.startsWith('p ') || cdk.includes('pho ban') || cdk.includes('pho truong ban');
+  if (isBanThuongTruc(p)) return false;
+  const cd = removeVietnameseTones(p.chucDanhMatTran || '').trim().toLowerCase();
+  return (
+    cd.includes('pho') ||
+    cd.includes('p.') ||
+    cd.startsWith('p ')
+  );
 }
 
 export function isPartyOfficial(p: Personnel): boolean {
-  if (p.isCapUy === true) return true;
-  const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
+  if (isBanThuongTruc(p)) return false;
+  if (isKeyLeader(p)) return false;
+  if (isDeputyLeader(p)) return false;
+
   const cdk = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
+  const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
+
+  // Exclude Youth Union (Chi đoàn Thanh niên)
+  if (cdk.includes('chi doan') || cdk.includes('thanh nien') || cd.includes('chi doan')) {
+    return false;
+  }
+
+  if (p.isCapUy === true) return true;
+
   const combined = `${cd} ${cdk}`;
   return (
+    combined.includes('dai dien cap uy') ||
     combined.includes('cap uy') ||
     combined.includes('chi uy') ||
-    combined.includes('bi thu') ||
-    combined.includes('pho bi thu')
+    combined.includes('chi bo') ||
+    combined.includes('dang uy') ||
+    combined.includes('bi thu')
   );
+}
+
+export function isThanhVien(p: Personnel): boolean {
+  if (isBanThuongTruc(p)) return false;
+  return !isKeyLeader(p) && !isDeputyLeader(p) && !isPartyOfficial(p);
 }
 
 export function formatPhoneNumber(phone: string): string {
