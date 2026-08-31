@@ -59,9 +59,9 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                 const birthYear = p.birthYear || p.namSinhNam || p.namSinhNu || '';
 
                 const phoneList: string[] = p.phones && p.phones.length > 0
-                  ? p.phones
+                  ? p.phones.map(ph => String(ph))
                   : p.soDienThoai
-                  ? p.soDienThoai.split(/[\/\n,]+/).map(s => s.trim()).filter(Boolean)
+                  ? String(p.soDienThoai).split(/[\/\n,]+/).map(s => s.trim()).filter(Boolean)
                   : [];
 
                 return (
@@ -130,9 +130,9 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                         }`}
                       >
                         {isBTT ? <span>⭐</span> : isLeader ? <span>👑</span> : isDeputy ? <span>🎖️</span> : null}
-                        {p.chucDanhMatTran?.toUpperCase() === 'TRƯỞNG BAN' 
+                        {String(p.chucDanhMatTran || '').toUpperCase() === 'TRƯỞNG BAN' 
                           ? 'Trưởng ban' 
-                          : p.chucDanhMatTran?.toUpperCase() === 'PHÓ TRƯỞNG BAN' 
+                          : String(p.chucDanhMatTran || '').toUpperCase() === 'PHÓ TRƯỞNG BAN' 
                           ? 'Phó Trưởng ban' 
                           : (p.chucDanhMatTran || 'Thành viên')}
                       </span>

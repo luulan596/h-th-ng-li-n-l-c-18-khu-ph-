@@ -28,7 +28,7 @@ export default function App() {
     if (saved) {
       try {
         const parsed: Personnel[] = JSON.parse(saved);
-        const withoutBTT = parsed.filter(p => p.khuPho !== 'Ban Thường trực' && !p.id.startsWith('btt-'));
+        const withoutBTT = parsed.filter(p => String(p.khuPho || '') !== 'Ban Thường trực' && !String(p.id || '').startsWith('btt-'));
         return [...BAN_THUONG_TRUC_DATA, ...withoutBTT];
       } catch (e) { /* fallback */ }
     }
@@ -256,15 +256,15 @@ export default function App() {
 
         // Normalized personnel fields
         const normName = removeVietnameseTones(p.hoTen).toLowerCase();
-        const phoneClean = p.soDienThoai.replace(/\D/g, '');
+        const phoneClean = String(p.soDienThoai || '').replace(/\D/g, '');
         const normAddress = removeVietnameseTones(p.diaChi).toLowerCase();
         const normRole = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
         const normOther = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
         const normKP = removeVietnameseTones(p.khuPho || '').toLowerCase();
-        const kpDigits = p.khuPho.replace(/\D/g, '');
+        const kpDigits = String(p.khuPho || '').replace(/\D/g, '');
 
         // 1. Direct Name Match
-        const matchName = normName.includes(normQ) || p.hoTen.toLowerCase().includes(rawQ.toLowerCase());
+        const matchName = normName.includes(normQ) || String(p.hoTen || '').toLowerCase().includes(rawQ.toLowerCase());
 
         // 2. Khu Phố Match (e.g. searching "1", "KP1", "Khu phố 1")
         let matchKP = normKP.includes(normQ);
@@ -289,16 +289,16 @@ export default function App() {
         const matchAddress = normAddress.includes(normQ);
 
         // Explicit STT search only if "stt" is typed
-        const matchSTT = normQ.startsWith('stt') && digitsOnly.length > 0 && String(p.stt) === digitsOnly;
+        const matchSTT = normQ.startsWith('stt') && digitsOnly.length > 0 && String(p.stt || '').includes(digitsOnly);
 
         if (!matchName && !matchKP && !matchPhone && !matchRole && !matchOther && !matchAddress && !matchSTT) {
           return false;
         }
       }
 
-      // 2. Khu Phố / Đơn vị - Loại bỏ logic lọc Ban Thường trực tại đây (đã có ở bộ lọc Ngành)
+      // 2. Khu Phố / Đơn vị
       if (filters.selectedKhuPho !== 'ALL') {
-        if (p.khuPho !== filters.selectedKhuPho || isBanThuongTruc(p)) return false;
+        if (String(p.khuPho || '') !== filters.selectedKhuPho || isBanThuongTruc(p)) return false;
       }
 
       // 3. Chức danh Mặt trận
@@ -312,7 +312,7 @@ export default function App() {
 
       // 4. Giới tính
       if (filters.selectedGender && filters.selectedGender !== 'ALL') {
-        const g = p.gender || (p.namSinhNam ? 'Nam' : p.namSinhNu ? 'Nữ' : '');
+        const g = String(p.gender || (p.namSinhNam ? 'Nam' : p.namSinhNu ? 'Nữ' : ''));
         if (g !== filters.selectedGender) return false;
       }
 
@@ -326,10 +326,8 @@ export default function App() {
         if (filters.selectedDoanThe === 'BAN_THUONG_TRUC') {
           if (!isBanThuongTruc(p)) return false;
         } else {
-          // Xử lý lọc theo các Ngành/Đoàn thể khác (dựa trên từ khóa trong chucDanhKhac)
           const other = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
           
-          // Map các value từ ORGANIZATION_KEYWORDS sang từ khóa tìm kiếm
           const orgKeywords: Record<string, string[]> = {
             'PHU_NU': ['phu nu'],
             'CUU_CHIEN_BINH': ['cuu chien binh'],
@@ -343,8 +341,7 @@ export default function App() {
           if (keywords) {
             if (!keywords.some(kw => other.includes(kw))) return false;
           } else {
-            // Fallback cho các trường hợp khác nếu có
-            const target = removeVietnameseTones(filters.selectedDoanThe.toLowerCase());
+            const target = removeVietnameseTones(String(filters.selectedDoanThe || '').toLowerCase());
             if (!other.includes(target)) return false;
           }
         }
@@ -352,7 +349,6 @@ export default function App() {
 
       return true;
     }).sort((a, b) => {
-      // 1. Sort by Front role priority: Ban Thường trực (0) -> Trưởng ban (1) -> Phó Trưởng ban (2) -> Thành viên (3)
       const getRolePriority = (person: Personnel) => {
         if (isBanThuongTruc(person)) return 0;
         if (isKeyLeader(person)) return 1;
@@ -362,8 +358,9 @@ export default function App() {
       const roleDiff = getRolePriority(a) - getRolePriority(b);
       if (roleDiff !== 0) return roleDiff;
 
-      // 2. Secondary sort: STT / original order
-      return (a.stt || 0) - (b.stt || 0);
+      const sttA = Number(a.stt) || 0;
+      const sttB = Number(b.stt) || 0;
+      return sttA - sttB;
     });
   }, [personnelList, filters]);
 

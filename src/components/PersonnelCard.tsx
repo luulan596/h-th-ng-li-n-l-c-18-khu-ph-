@@ -23,18 +23,19 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   // Extract phone numbers
   const phoneList: string[] = React.useMemo(() => {
     if (personnel.phones && personnel.phones.length > 0) {
-      return personnel.phones.filter(Boolean);
+      return personnel.phones.filter(Boolean).map(p => String(p));
     }
-    if (personnel.soDienThoai) {
-      const parts = personnel.soDienThoai.split(/[\/\n,]+/).map(s => s.trim()).filter(Boolean);
-      return parts.length > 0 ? parts : [personnel.soDienThoai.trim()];
+    const rawPhone = String(personnel.soDienThoai || '');
+    if (rawPhone) {
+      const parts = rawPhone.split(/[\/\n,]+/).map(s => s.trim()).filter(Boolean);
+      return parts.length > 0 ? parts : [rawPhone.trim()];
     }
     return [];
   }, [personnel.phones, personnel.soDienThoai]);
 
   // Gender & Birth Year
-  const gender = personnel.gender || (personnel.namSinhNam ? 'Nam' : personnel.namSinhNu ? 'Nữ' : '');
-  const birthYear = personnel.birthYear || personnel.namSinhNam || personnel.namSinhNu || '';
+  const gender = String(personnel.gender || (personnel.namSinhNam ? 'Nam' : personnel.namSinhNu ? 'Nữ' : ''));
+  const birthYear = String(personnel.birthYear || personnel.namSinhNam || personnel.namSinhNu || '');
 
   const handleCopyPhone = (e: React.MouseEvent, phone: string, index: number) => {
     e.stopPropagation();
@@ -67,9 +68,10 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
     : 'bg-red-50 text-red-800 border border-red-200';
 
   const formattedRole = () => {
-    const role = isParty 
+    const rawRole = isParty 
       ? (personnel.chucDanhKhac || 'Đại diện Cấp ủy Chi bộ') 
       : (personnel.chucDanhMatTran || 'Thành viên');
+    const role = String(rawRole);
     if (role.toUpperCase() === 'TRƯỞNG BAN') return 'Trưởng ban';
     if (role.toUpperCase() === 'PHÓ TRƯỞNG BAN') return 'Phó Trưởng ban';
     return role;

@@ -1,6 +1,7 @@
 import { Personnel } from '../types';
 
-export function removeVietnameseTones(str: string): string {
+export function removeVietnameseTones(input: any): string {
+  const str = String(input || '');
   if (!str) return '';
   let result = str;
   result = result.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a');
@@ -21,7 +22,7 @@ export function removeVietnameseTones(str: string): string {
 }
 
 export function isBanThuongTruc(p: Personnel): boolean {
-  if (p.khuPho === 'Ban Thường trực' || p.id?.startsWith('btt-')) return true;
+  if (String(p.khuPho || '') === 'Ban Thường trực' || String(p.id || '').startsWith('btt-')) return true;
   const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
   return cd.includes('chu tich') || cd.includes('thuong truc');
 }
@@ -75,7 +76,8 @@ export function isThanhVien(p: Personnel): boolean {
   return !isKeyLeader(p) && !isDeputyLeader(p) && !isPartyOfficial(p);
 }
 
-export function formatPhoneNumber(phone: string): string {
+export function formatPhoneNumber(phoneInput: any): string {
+  const phone = String(phoneInput || '');
   if (!phone) return '';
   const cleaned = phone.replace(/\D/g, '');
   if (cleaned.length === 10) {
@@ -84,22 +86,26 @@ export function formatPhoneNumber(phone: string): string {
   return phone;
 }
 
-export function getZaloLink(phone: string): string {
+export function getZaloLink(phoneInput: any): string {
+  const phone = String(phoneInput || '');
   const cleaned = phone.replace(/\D/g, '');
   return `https://zalo.me/${cleaned}`;
 }
 
-export function getTelLink(phone: string): string {
+export function getTelLink(phoneInput: any): string {
+  const phone = String(phoneInput || '');
   const cleaned = phone.replace(/\D/g, '');
   return `tel:${cleaned}`;
 }
 
-export function getSmsLink(phone: string): string {
+export function getSmsLink(phoneInput: any): string {
+  const phone = String(phoneInput || '');
   const cleaned = phone.replace(/\D/g, '');
   return `sms:${cleaned}`;
 }
 
-export function getGoogleMapsDirLink(address: string): string {
+export function getGoogleMapsDirLink(addressInput: any): string {
+  const address = String(addressInput || '');
   const fullAddress = address.includes('Phường Bình Tiên')
     ? (address.includes('TP.') || address.includes('Hồ Chí Minh') || address.includes('TP.HCM') ? address : `${address}, TP. Hồ Chí Minh`)
     : `${address}, Phường Bình Tiên, TP. Hồ Chí Minh`;
