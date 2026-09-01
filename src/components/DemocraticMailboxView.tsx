@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { CitizenFeedback } from '../types';
 
+import { GOOGLE_FEEDBACK_FORM_URL } from '../config/feedback';
+
 interface DemocraticMailboxViewProps {
   onBackToList?: () => void;
 }
@@ -68,7 +70,7 @@ const DEFAULT_FEEDBACKS: CitizenFeedback[] = [
 export const DemocraticMailboxView: React.FC<DemocraticMailboxViewProps> = () => {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [feedbackUrl, setFeedbackUrl] = useState<string>(() => {
-    return localStorage.getItem('mt_feedback_custom_url') || window.location.href;
+    return localStorage.getItem('mt_feedback_custom_url') || GOOGLE_FEEDBACK_FORM_URL;
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -229,17 +231,12 @@ export const DemocraticMailboxView: React.FC<DemocraticMailboxViewProps> = () =>
             {/* Central QR Code Card */}
             <div className="flex flex-col items-center justify-center">
               <div className="relative p-5 sm:p-7 bg-white rounded-2xl border-2 border-red-100/90 shadow-xs flex items-center justify-center group">
-                {qrCodeDataUrl ? (
-                  <img
-                    src={qrCodeDataUrl}
-                    alt="Mã QR Hộp thư dân chủ cơ sở"
-                    className="w-52 h-52 sm:w-60 sm:h-60 object-contain rounded-lg"
-                  />
-                ) : (
-                  <div className="w-52 h-52 sm:w-60 sm:h-60 bg-slate-100 animate-pulse rounded-lg flex items-center justify-center text-slate-400">
-                    Đang tạo mã QR...
-                  </div>
-                )}
+                <img
+                  src="https://lh3.googleusercontent.com/d/1x_jC7JnkOu4aYHuBQy4G_EARRhccp0-g"
+                  alt="Mã QR Hộp thư dân chủ cơ sở"
+                  className="w-52 h-52 sm:w-60 sm:h-60 object-contain rounded-lg"
+                  referrerPolicy="no-referrer"
+                />
               </div>
 
               {/* QR Hint Pill Badge */}
@@ -252,7 +249,7 @@ export const DemocraticMailboxView: React.FC<DemocraticMailboxViewProps> = () =>
             {/* Primary Action Button: GỬI Ý KIẾN NGAY */}
             <div className="flex flex-col items-center justify-center pt-1">
               <button
-                onClick={() => setIsFormOpen(true)}
+                onClick={() => window.open(feedbackUrl, '_blank', 'noopener,noreferrer')}
                 className="w-full sm:w-80 py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#a30d0d] via-[#b91c1c] to-[#c2410c] hover:from-[#880808] hover:to-[#9a3412] text-white font-black text-sm sm:text-base uppercase tracking-wider shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all active:scale-98"
               >
                 <span>GỬI Ý KIẾN NGAY</span>
