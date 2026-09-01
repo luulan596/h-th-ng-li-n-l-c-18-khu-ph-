@@ -68,20 +68,16 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
     // 3. Tính CƠ CẤU ĐỘ TUỔI
     const currentYear = 2026;
-    let ageUnder40 = 0;
-    let age40to50 = 0;
-    let age50to60 = 0;
-    let ageOver60 = 0;
-
+    let under40 = 0, age40_50 = 0, age51_60 = 0, over60 = 0;
     targetList.forEach(p => {
-      const birthYearVal = (p as any).nam_sinh || (p as any).namSinh || p.namSinhNam || p.namSinhNu;
-      const birthYear = parseInt(String(birthYearVal || ''), 10);
-      if (birthYear && birthYear > 1900) {
+      const raw = (p as any).nam_sinh || (p as any).namSinh || p.namSinhNam || p.namSinhNu;
+      const birthYear = raw ? parseInt(String(raw).replace(/\D/g, ''), 10) : null;
+      if (birthYear && birthYear >= 1930 && birthYear <= currentYear) {
         const age = currentYear - birthYear;
-        if (age < 40) ageUnder40++;
-        else if (age <= 50) age40to50++;
-        else if (age <= 60) age50to60++;
-        else ageOver60++;
+        if (age < 40) under40++;
+        else if (age <= 50) age40_50++;
+        else if (age <= 60) age51_60++;
+        else over60++;
       }
     });
 
@@ -110,7 +106,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       capUy,
       namCount,
       nuCount,
-      ageGroups: { ageUnder40, age40to50, age50to60, ageOver60 },
+      ageGroups: { under40, age40_50, age51_60, over60 },
       doanThe: { phuNuCount, ccbCount, doanTnCount, nctCount, ctdCount },
     };
   }, [personnelList]);
@@ -245,10 +241,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
           <div className="space-y-2.5 pt-1">
             {[
-              { label: 'Dưới 40 tuổi', count: stats.ageGroups.ageUnder40, color: 'bg-emerald-500' },
-              { label: 'Từ 40 - 50 tuổi', count: stats.ageGroups.age40to50, color: 'bg-blue-500' },
-              { label: 'Từ 51 - 60 tuổi', count: stats.ageGroups.age50to60, color: 'bg-amber-500' },
-              { label: 'Trên 60 tuổi', count: stats.ageGroups.ageOver60, color: 'bg-red-500' },
+              { label: 'Dưới 40 tuổi', count: stats.ageGroups.under40, color: 'bg-emerald-500' },
+              { label: 'Từ 40 - 50 tuổi', count: stats.ageGroups.age40_50, color: 'bg-blue-500' },
+              { label: 'Từ 51 - 60 tuổi', count: stats.ageGroups.age51_60, color: 'bg-amber-500' },
+              { label: 'Trên 60 tuổi', count: stats.ageGroups.over60, color: 'bg-red-500' },
             ].map((group) => (
               <div key={group.label} className="space-y-1">
                 <div className="flex justify-between text-[11px] font-bold">
