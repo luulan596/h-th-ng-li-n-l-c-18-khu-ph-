@@ -44,40 +44,44 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 }) => {
   // Thống kê chức danh
   const stats = useMemo(() => {
-    const total = personnelList.length;
-    const btt = personnelList.filter(isBanThuongTruc).length;
-    const truongBan = personnelList.filter(isKeyLeader).length;
-    const phoBan = personnelList.filter(isDeputyLeader).length;
-    const capUy = personnelList.filter(isPartyOfficial).length;
-    const thanhVien = total - btt - truongBan - phoBan;
+    // 1. Xác định tập dữ liệu thống kê (143 cán bộ Khu phố)
+    const targetList = personnelList.filter(item => {
+      // Loại bỏ 11 người đầu (dựa theo id <= 11 hoặc có khu_pho)
+      const idNum = parseInt(String(item.id || '').replace(/\D/g, ''), 10);
+      return (idNum > 11 || (!isNaN(idNum) && idNum > 11)) && Boolean(item.khuPho || (item as any).khu_pho);
+    });
 
-    // Giới tính & Độ tuổi
-    let namCount = 0;
-    let nuCount = 0;
-    const currentYear = new Date().getFullYear();
-    
-    // Nhóm tuổi
+    const targetTotal = targetList.length || 143;
+
+    const btt = personnelList.filter(isBanThuongTruc).length;
+    const truongBan = targetList.filter(isKeyLeader).length;
+    const phoBan = targetList.filter(isDeputyLeader).length;
+    const capUy = targetList.filter(isPartyOfficial).length;
+    const thanhVien = targetTotal - truongBan - phoBan;
+
+    // 2. Tính CƠ CẤU GIỚI TÍNH
+    const namCount = targetList.filter(p => {
+      const g = String((p as any).gioi_tinh || (p as any).gioiTinh || p.gender || '').trim().toLowerCase();
+      return g === 'nam';
+    }).length;
+    const nuCount = targetTotal - namCount;
+
+    // 3. Tính CƠ CẤU ĐỘ TUỔI
+    const currentYear = 2026;
     let ageUnder40 = 0;
     let age40to50 = 0;
     let age50to60 = 0;
     let ageOver60 = 0;
 
-    personnelList.forEach((p) => {
-      // Giới tính
-      if (p.namSinhNu || p.gender === 'Nữ') nuCount++;
-      else if (p.namSinhNam || p.gender === 'Nam') namCount++;
-
-      // Độ tuổi
-      const birthYearStr = p.namSinhNam || p.namSinhNu;
-      if (birthYearStr) {
-        const birthYear = parseInt(birthYearStr.toString());
-        if (!isNaN(birthYear)) {
-          const age = currentYear - birthYear;
-          if (age < 40) ageUnder40++;
-          else if (age <= 50) age40to50++;
-          else if (age <= 60) age50to60++;
-          else ageOver60++;
-        }
+    targetList.forEach(p => {
+      const birthYearVal = (p as any).nam_sinh || (p as any).namSinh || p.namSinhNam || p.namSinhNu;
+      const birthYear = parseInt(String(birthYearVal || ''), 10);
+      if (birthYear && birthYear > 1900) {
+        const age = currentYear - birthYear;
+        if (age < 40) ageUnder40++;
+        else if (age <= 50) age40to50++;
+        else if (age <= 60) age50to60++;
+        else ageOver60++;
       }
     });
 
@@ -88,7 +92,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     let nctCount = 0;
     let ctdCount = 0;
 
-    personnelList.forEach((p) => {
+    targetList.forEach((p) => {
       const r = (p.chucDanhKhac || '').toLowerCase();
       if (r.includes('phụ nữ')) phuNuCount++;
       if (r.includes('cựu chiến binh')) ccbCount++;
@@ -98,7 +102,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     });
 
     return {
-      total,
+      total: targetTotal,
       btt,
       truongBan,
       phoBan,
