@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, MapPin, Award, Shield, Copy, Check, MessageCircle, AlertTriangle, Calendar, User } from 'lucide-react';
 import { Personnel } from '../types';
-import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink } from '../utils/helpers';
+import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
 
 interface PersonnelCardProps {
   personnel: Personnel;
@@ -20,18 +20,16 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   const isDeputy = isDeputyLeader(personnel);
   const isParty = isPartyOfficial(personnel);
 
-  // Extract phone numbers
+  // Extract phone numbers with multi-phone support
   const phoneList: string[] = React.useMemo(() => {
-    if (personnel.phones && personnel.phones.length > 0) {
-      return personnel.phones.filter(Boolean).map(p => String(p));
-    }
-    const rawPhone = String(personnel.soDienThoai || '');
-    if (rawPhone) {
-      const parts = rawPhone.split(/[\/\n,]+/).map(s => s.trim()).filter(Boolean);
-      return parts.length > 0 ? parts : [rawPhone.trim()];
-    }
-    return [];
-  }, [personnel.phones, personnel.soDienThoai]);
+    const rawPhone = String(personnel.soDienThoai || personnel.phones?.[0] || '');
+    if (!rawPhone) return [];
+    
+    return rawPhone
+      .split(/[\n\r,;/]+|\\n/)
+      .map(p => p.trim())
+      .filter(p => p.length >= 8);
+  }, [personnel.soDienThoai, personnel.phones]);
 
   // Gender & Birth Year
   const gender = String(personnel.gender || (personnel.namSinhNam ? 'Nam' : personnel.namSinhNu ? 'Nữ' : ''));
@@ -175,7 +173,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
       </div>
 
       {/* Footer Bar with Phone Controls */}
-      <div className="px-3 py-2 bg-slate-50/95 border-t border-slate-200 flex flex-col gap-1.5">
+      <div className="px-3 py-2 bg-slate-50/95 border-t border-slate-200 flex flex-col gap-2">
         {phoneList.length === 0 ? (
           <div className="flex items-center justify-between text-xs text-slate-400 italic">
             <span>Chưa cập nhật SĐT</span>
@@ -187,63 +185,79 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
             </button>
           </div>
         ) : (
-          phoneList.map((phone, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-1.5">
-              <a
-                href={getTelLink(phone)}
-                className="flex items-center gap-1 min-w-0 text-left hover:text-red-700 transition-colors group"
-                title={`Bấm để gọi điện cho ${personnel.hoTen}`}
-              >
-                <Phone className="w-3 h-3 text-red-600 group-hover:scale-110 transition-transform shrink-0" />
-                <span className="text-xs font-bold text-slate-900 font-mono tracking-tight truncate group-hover:text-red-700">
-                  {formatPhoneNumber(phone)}
-                </span>
-              </a>
-
-              <div className="flex items-center gap-1 shrink-0">
+          <div className="space-y-2">
+            {phoneList.map((phone, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-1.5">
                 <a
                   href={getTelLink(phone)}
-                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shadow-2xs transition-all active:scale-95"
-                  title={`Gọi ${phone}`}
+                  className="flex items-center gap-1 min-w-0 text-left hover:text-red-700 transition-colors group"
+                  title={`Bấm để gọi điện cho ${personnel.hoTen}`}
                 >
-                  <Phone className="w-3 h-3 fill-white" />
-                  <span>GỌI</span>
+                  <Phone className="w-3 h-3 text-red-600 group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="text-xs font-bold text-slate-900 font-mono tracking-tight truncate group-hover:text-red-700">
+                    {formatPhoneNumber(phone)}
+                  </span>
                 </a>
 
-                <button
-                  onClick={(e) => handleCopyPhone(e, phone, idx)}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-0.5 shadow-2xs transition-all active:scale-95 ${
-                    copiedIndex === idx
-                      ? 'bg-emerald-800 text-white'
-                      : 'bg-red-800 hover:bg-red-900 text-amber-100 border border-red-900'
-                  }`}
-                  title="Sao chép số điện thoại"
-                >
-                  {copiedIndex === idx ? (
-                    <>
-                      <Check className="w-3 h-3 stroke-[3]" />
-                      <span>ĐÃ COPY</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3 text-amber-200" />
-                      <span>COPY</span>
-                    </>
-                  )}
-                </button>
-
-                {idx === 0 && (
-                  <button
-                    onClick={() => onSelectPerson(personnel)}
-                    className="p-1 bg-white hover:bg-red-50 text-red-900 border border-red-200 rounded-lg text-[10px] font-bold flex items-center justify-center shadow-2xs transition-colors"
-                    title="Xem chi tiết & tùy chọn liên hệ"
+                <div className="flex items-center gap-1 shrink-0">
+                  <a
+                    href={getTelLink(phone)}
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shadow-2xs transition-all active:scale-95"
+                    title={`Gọi ${phone}`}
                   >
-                    <MessageCircle className="w-3.5 h-3.5 text-red-700" />
+                    <Phone className="w-3 h-3 fill-white" />
+                    <span>GỌI</span>
+                  </a>
+
+                  <button
+                    onClick={(e) => handleCopyPhone(e, phone, idx)}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-0.5 shadow-2xs transition-all active:scale-95 ${
+                      copiedIndex === idx
+                        ? 'bg-emerald-800 text-white'
+                        : 'bg-red-800 hover:bg-red-900 text-amber-100 border border-red-900'
+                    }`}
+                    title="Sao chép số điện thoại"
+                  >
+                    {copiedIndex === idx ? (
+                      <>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                        <span>ĐÃ COPY</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3 text-amber-200" />
+                        <span>COPY</span>
+                      </>
+                    )}
                   </button>
-                )}
+
+                  <a
+                    href={getZaloLink(phone)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center justify-center shadow-2xs transition-colors"
+                    title="Chat Zalo"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </a>
+
+                  {idx === 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectPerson(personnel);
+                      }}
+                      className="p-1.5 bg-white hover:bg-red-50 text-red-900 border border-red-200 rounded-lg text-[10px] font-bold flex items-center justify-center shadow-2xs transition-colors ml-0.5"
+                      title="Xem chi tiết"
+                    >
+                      <User className="w-3.5 h-3.5 text-red-700" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
