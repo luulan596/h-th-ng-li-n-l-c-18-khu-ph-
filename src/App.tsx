@@ -271,14 +271,25 @@ export default function App() {
 
         if (queryWords.length === 1) {
           const singleQ = queryWords[0];
-          // Khớp theo từng từ: (word === singleQ) hoặc (word.startsWith(singleQ))
-          // Để tránh "huy" khớp "huynh", ta dùng thêm điều kiện độ dài cho startsWith hoặc logic cụ thể
+          // Khớp chính xác theo từng từ
+          // Tách từ theo ranh giới từ (word boundary)
           matchName = nameWords.some(word => {
+            // Trường hợp khớp chính xác hoàn toàn
             if (word === singleQ) return true;
+            
+            // Trường hợp bắt đầu bằng (ví dụ gõ "nguy" khớp "nguyen")
             if (word.startsWith(singleQ)) {
-              // Tránh "huy" khớp "huynh" (theo yêu cầu user), nhưng "nguy" vẫn khớp "nguyen"
+              // TRƯỜNG HỢP ĐẶC BIỆT THEO YÊU CẦU:
+              // "huy" không được khớp "huynh" (Huỳnh)
               if (singleQ === 'huy' && word === 'huynh') return false;
-              // thuy.startsWith(huy) là false -> Đã tự loại "Thủy"
+              // thuy (Thủy) không bắt đầu bằng huy -> Đã tự loại
+              
+              // Nếu từ khóa ngắn (<= 3 ký tự), yêu cầu khớp chính xác hơn hoặc logic loại trừ
+              if (singleQ.length <= 3 && word !== singleQ) {
+                 // Ví dụ "ha" không khớp "hanh" (Hạnh) nếu user muốn cực kỳ chính xác
+                 // Tuy nhiên "ha" vẫn thường khớp "hai", "han"... 
+                 // Tạm thời chỉ chặn "huy" -> "huynh" theo yêu cầu cụ thể.
+              }
               return true;
             }
             return false;
@@ -579,16 +590,42 @@ export default function App() {
             {/* Filter Bar */}
             <FilterBar
               filters={filters}
-              onFilterChange={(newF) => setFilters((prev) => ({ ...prev, ...newF }))}
-              onResetFilters={() =>
+              onFilterChange={(newF) => {
+                setFilters((prev) => {
+                  const updated = { ...prev, ...newF };
+                  
+                  // LOGIC TÁCH BIỆT: Nếu gõ tìm kiếm (có nội dung) -> reset tất cả các bộ lọc dropdown
+                  if (newF.searchQuery !== undefined && newF.searchQuery.trim() !== '') {
+                    updated.selectedKhuPho = 'ALL';
+                    updated.selectedDoanThe = 'ALL';
+                    updated.selectedChucDanh = 'ALL';
+                    updated.onlyCapUy = false;
+                    updated.selectedGender = 'ALL';
+                  }
+                  
+                  // LOGIC TÁCH BIỆT: Nếu chọn bất kỳ dropdown nào -> xóa trắng ô tìm kiếm
+                  if (newF.selectedKhuPho !== undefined || 
+                      newF.selectedDoanThe !== undefined || 
+                      newF.selectedChucDanh !== undefined || 
+                      newF.selectedGender !== undefined ||
+                      newF.onlyCapUy !== undefined) {
+                    updated.searchQuery = '';
+                  }
+                  
+                  return updated;
+                });
+              }}
+              onResetFilters={() => {
                 setFilters({
                   searchQuery: '',
                   selectedKhuPho: 'ALL',
                   selectedDoanThe: 'ALL',
+                  selectedChucDanh: 'ALL',
                   selectedGender: 'ALL',
+                  onlyCapUy: false,
                   sortBy: 'stt',
-                })
-              }
+                });
+              }}
               totalFiltered={filteredPersonnelList.length}
               totalCount={personnelList.length}
               availableKhuPhoList={availableKhuPhoList}
