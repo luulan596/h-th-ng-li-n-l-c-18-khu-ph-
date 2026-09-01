@@ -43,6 +43,7 @@ export async function fetchAllHeadquarters(): Promise<Headquarters[]> {
           gioLamViec: item.gio_lam_viec || '07:30 - 17:00 (Thứ 2 - Thứ 6)',
           canBoPhuTrach: item.can_bo_phu_trach || '',
           chucVuCanBo: item.chuc_vu_can_bo || '',
+          ma_tru_so: item.ma_tru_so || '',
           toaDo: {
             lat: Number(item.latitude || item.lat || 10.748),
             lng: Number(item.longitude || item.lng || 106.650),

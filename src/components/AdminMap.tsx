@@ -36,16 +36,23 @@ export const AdminMap: React.FC<AdminMapProps> = ({
     moTaChucNang: site.summary,
   }));
 
-  // Counts based on actual Supabase data structure
-  const govCount = headquartersList.filter((hq) => hq.loaiTruSo === 'CO_QUAN').length;
-  const kpCount = headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho').length;
+  // Filtered lists for counts and dropdowns
+  const govList = headquartersList.filter((hq) => 
+    hq.loaiTruSo === 'CO_QUAN' || 
+    ['CA', 'MTTQ', 'QS', 'TYT', 'UBND'].includes(String(hq.ma_tru_so || '').toUpperCase()) ||
+    (!hq.khuPhoThuocVong && hq.loaiTruSo !== 'RED_SITE' as any)
+  );
+  
+  const govCount = govList.length;
+  const kpList = headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho');
+  const kpCount = kpList.length;
   const totalCount = govCount + kpCount + redSitesList.length;
 
-  // Filtered list
+  // Filtered list for map rendering
   const filteredList = (() => {
-    if (selectedCategory === 'ALL') return [...headquartersList, ...redSiteHqs];
-    if (selectedCategory === 'GOVERNMENT') return headquartersList.filter((hq) => hq.loaiTruSo === 'CO_QUAN');
-    if (selectedCategory === 'KHU_PHO') return headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho');
+    if (selectedCategory === 'ALL') return [...govList, ...kpList, ...redSiteHqs];
+    if (selectedCategory === 'GOVERNMENT') return govList;
+    if (selectedCategory === 'KHU_PHO') return kpList;
     if (selectedCategory === 'RED_SITES') return redSiteHqs;
     return headquartersList.filter((hq) => hq.loaiTruSo === selectedCategory);
   })();
@@ -53,6 +60,10 @@ export const AdminMap: React.FC<AdminMapProps> = ({
   // Original Custom Icons
   const createCustomIcon = (hq: Headquarters, isSelected: boolean) => {
     const isRedSite = hq.loaiTruSo as any === 'RED_SITE';
+    const isGov = hq.loaiTruSo === 'CO_QUAN' || 
+                 ['CA', 'MTTQ', 'QS', 'TYT', 'UBND'].includes(String(hq.ma_tru_so || '').toUpperCase()) ||
+                 !hq.khuPhoThuocVong;
+    
     let bgColor = 'bg-red-600';
     let borderColor = 'border-amber-300';
     let iconHtml = '🏛️';
@@ -61,13 +72,12 @@ export const AdminMap: React.FC<AdminMapProps> = ({
       bgColor = 'bg-amber-600';
       borderColor = 'border-red-300';
       iconHtml = '<span class="text-base">🚩</span>';
+    } else if (isGov) {
+      bgColor = 'bg-blue-600';
+      borderColor = 'border-amber-300';
+      iconHtml = '<span class="text-base">🏛️</span>';
     } else {
       switch (hq.loaiTruSo) {
-        case 'CO_QUAN':
-          bgColor = 'bg-blue-600';
-          borderColor = 'border-amber-300';
-          iconHtml = '<span class="text-base">🏛️</span>';
-          break;
         case 'khu_pho': {
           bgColor = 'bg-red-700';
           borderColor = 'border-amber-400';
@@ -243,6 +253,7 @@ export const AdminMap: React.FC<AdminMapProps> = ({
           >
             <span>🏛️</span>
             <span>Cơ quan Phường ({govCount})</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${selectedCategory === 'GOVERNMENT' ? 'rotate-180' : ''}`} />
           </button>
           <button
             onClick={() => {
@@ -272,42 +283,108 @@ export const AdminMap: React.FC<AdminMapProps> = ({
           >
             <Landmark className="w-3.5 h-3.5 text-amber-300 shrink-0" />
             <span>Địa chỉ đỏ ({redSitesList.length})</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${selectedCategory === 'RED_SITES' ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* KP Selector */}
+      {/* Dropdown Selectors */}
+      {selectedCategory === 'GOVERNMENT' && (
+        <div className="bg-red-800/95 px-3 py-2.5 border-b border-amber-500/30 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="relative">
+            <select
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'all') {
+                  setSelectedHq(null);
+                  if (govList.length > 0) {
+                    const bounds = L.latLngBounds(govList.map(h => [h.toaDo.lat, h.toaDo.lng]));
+                    mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                  }
+                } else {
+                  const hq = govList.find(h => h.id === val);
+                  if (hq) {
+                    setSelectedHq(hq);
+                    mapInstanceRef.current?.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 1.2 });
+                  }
+                }
+              }}
+              value={selectedHq?.id || 'all'}
+              className="w-full bg-red-950 border border-amber-500/30 text-amber-50 text-xs font-bold rounded-lg py-2.5 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 appearance-none cursor-pointer shadow-sm"
+            >
+              <option value="all">Tất cả {govCount} Cơ quan Phường</option>
+              {govList.map(hq => (
+                <option key={hq.id} value={hq.id}>{hq.tenTruSo}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-amber-500">
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedCategory === 'KHU_PHO' && (
         <div className="bg-red-800/95 px-3 py-2.5 border-b border-amber-500/30 animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="relative">
             <select
               onChange={(e) => {
                 const val = e.target.value;
-                if (val === 'ALL') {
+                if (val === 'all') {
                   setSelectedHq(null);
-                  const kpMarkers = headquartersList.filter(h => h.loaiTruSo === 'khu_pho');
-                  if (kpMarkers.length > 0) {
-                    const bounds = L.latLngBounds(kpMarkers.map(h => [h.toaDo.lat, h.toaDo.lng]));
+                  if (kpList.length > 0) {
+                    const bounds = L.latLngBounds(kpList.map(h => [h.toaDo.lat, h.toaDo.lng]));
                     mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
                   }
                 } else {
-                  const num = parseInt(val);
-                  const hq = headquartersList.find(h => 
-                    h.loaiTruSo === 'khu_pho' && 
-                    (h.tenTruSo.includes(`Khu phố ${num}`) || h.khuPhoThuocVong === `Khu phố ${num}`)
-                  );
+                  const hq = kpList.find(h => h.id === val);
                   if (hq) {
                     setSelectedHq(hq);
-                    mapInstanceRef.current?.flyTo([hq.toaDo.lat, hq.toaDo.lng], 18, { duration: 1 });
+                    mapInstanceRef.current?.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 1.2 });
                   }
                 }
               }}
-              value={selectedHq?.khuPhoThuocVong?.replace('Khu phố ', '') || selectedHq?.tenTruSo?.replace('Trụ sở Khu phố ', '') || 'ALL'}
+              value={selectedHq?.id || 'all'}
               className="w-full bg-red-950 border border-amber-500/30 text-amber-50 text-xs font-bold rounded-lg py-2.5 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 appearance-none cursor-pointer shadow-sm"
             >
-              <option value="ALL">Tất cả 18 Khu phố</option>
-              {Array.from({ length: 18 }, (_, i) => i + 1).map(num => (
-                <option key={num} value={num}>Khu phố {num}</option>
+              <option value="all">Tất cả {kpCount} Khu phố</option>
+              {kpList.map(hq => (
+                <option key={hq.id} value={hq.id}>{hq.tenTruSo}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-amber-500">
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedCategory === 'RED_SITES' && (
+        <div className="bg-red-800/95 px-3 py-2.5 border-b border-amber-500/30 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="relative">
+            <select
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'all') {
+                  setSelectedHq(null);
+                  if (redSiteHqs.length > 0) {
+                    const bounds = L.latLngBounds(redSiteHqs.map(h => [h.toaDo.lat, h.toaDo.lng]));
+                    mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                  }
+                } else {
+                  const hq = redSiteHqs.find(h => h.id === val);
+                  if (hq) {
+                    setSelectedHq(hq);
+                    mapInstanceRef.current?.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 1.2 });
+                  }
+                }
+              }}
+              value={selectedHq?.id || 'all'}
+              className="w-full bg-red-950 border border-amber-500/30 text-amber-50 text-xs font-bold rounded-lg py-2.5 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 appearance-none cursor-pointer shadow-sm"
+            >
+              <option value="all">Tất cả {redSiteHqs.length} Địa chỉ đỏ</option>
+              {redSiteHqs.map(hq => (
+                <option key={hq.id} value={hq.id}>{hq.tenTruSo.replace('🚩 ', '')}</option>
               ))}
             </select>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-amber-500">

@@ -37,6 +37,7 @@ export interface Headquarters {
   canBoPhuTrach?: string;
   chucVuCanBo?: string;
   moTaChucNang?: string;
+  ma_tru_so?: string;
 }
 
 export interface RedSite {
