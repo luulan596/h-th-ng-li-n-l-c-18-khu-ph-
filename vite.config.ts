@@ -15,7 +15,7 @@ export default defineConfig(() => {
         devOptions: {
           enabled: true,
         },
-        includeAssets: ['mat_tran_logo.svg', 'pwa-icon.png'],
+        includeAssets: ['mat_tran_logo.svg', 'icon.png'],
         manifest: {
           name: 'Hệ thống Liên lạc Ban Công tác Mặt trận 18 Khu phố',
           short_name: 'Mặt Trận 18 KP',
@@ -28,16 +28,22 @@ export default defineConfig(() => {
           scope: '/',
           icons: [
             {
-              src: '/pwa-icon.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any maskable'
-            },
-            {
-              src: '/pwa-icon.png',
+              src: '/pwa-512x512.png?v=2026',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: '/pwa-192x192.png?v=2026',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/maskable-icon-512x512.png?v=2026',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
             }
           ]
         },
