@@ -248,85 +248,38 @@ export default function App() {
   // Fast Client-Side Memoized Filtering Logic
   const filteredPersonnelList = useMemo(() => {
     return personnelList.filter((p) => {
-      // 1. Smart Search Query (Accent-insensitive, diacritic tolerant & numerical shortcuts)
+      // 1. Nếu ô tìm kiếm có chữ -> CHỈ tìm theo Họ Tên, Số Điện Thoại hoặc Viết tắt Khu Phố
       if (filters.searchQuery.trim()) {
         const rawQ = filters.searchQuery.trim();
-        const normQ = removeVietnameseTones(rawQ).toLowerCase();
-        const digitsOnly = rawQ.replace(/\D/g, '');
+        const query = removeVietnameseTones(rawQ).toLowerCase();
+        
+        // a. TÌM THEO HỌ TÊN (So sánh chính xác từng từ độc lập)
+        const nameClean = removeVietnameseTones(p.hoTen).toLowerCase();
+        const nameWords = nameClean.split(/\s+/).filter(Boolean);
+        const matchName = nameWords.some(word => {
+          if (word === query) return true;
+          if (word.startsWith(query)) {
+            if (query === 'huy' && word === 'huynh') return false;
+            return true;
+          }
+          return false;
+        });
 
-        // Normalized personnel fields
-        const normName = removeVietnameseTones(p.hoTen).toLowerCase();
-        const nameWords = normName.split(/\s+/).filter(Boolean);
-
+        // b. TÌM THEO SỐ ĐIỆN THOẠI
         const phoneClean = String(p.soDienThoai || '').replace(/\D/g, '');
-        const normAddress = removeVietnameseTones(p.diaChi).toLowerCase();
-        const normRole = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
-        const normOther = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase();
-        const normKP = removeVietnameseTones(p.khuPho || '').toLowerCase();
-        const kpDigits = String(p.khuPho || '').replace(/\D/g, '');
+        const queryDigits = query.replace(/\D/g, '');
+        const matchPhone = queryDigits.length >= 3 && phoneClean.includes(queryDigits);
 
-        // 1. Name Match (Word-boundary matching)
-        const queryWords = normQ.split(/\s+/).filter(Boolean);
-        let matchName = false;
-
-        if (queryWords.length === 1) {
-          const singleQ = queryWords[0];
-          // Khớp chính xác theo từng từ
-          // Tách từ theo ranh giới từ (word boundary)
-          matchName = nameWords.some(word => {
-            // Trường hợp khớp chính xác hoàn toàn
-            if (word === singleQ) return true;
-            
-            // Trường hợp bắt đầu bằng (ví dụ gõ "nguy" khớp "nguyen")
-            if (word.startsWith(singleQ)) {
-              // TRƯỜNG HỢP ĐẶC BIỆT THEO YÊU CẦU:
-              // "huy" không được khớp "huynh" (Huỳnh)
-              if (singleQ === 'huy' && word === 'huynh') return false;
-              // thuy (Thủy) không bắt đầu bằng huy -> Đã tự loại
-              
-              // Nếu từ khóa ngắn (<= 3 ký tự), yêu cầu khớp chính xác hơn hoặc logic loại trừ
-              if (singleQ.length <= 3 && word !== singleQ) {
-                 // Ví dụ "ha" không khớp "hanh" (Hạnh) nếu user muốn cực kỳ chính xác
-                 // Tuy nhiên "ha" vẫn thường khớp "hai", "han"... 
-                 // Tạm thời chỉ chặn "huy" -> "huynh" theo yêu cầu cụ thể.
-              }
-              return true;
-            }
-            return false;
-          });
-        } else {
-          // Tìm chuỗi con nếu query có nhiều từ
-          matchName = normName.includes(normQ);
+        // c. TÌM THEO VIẾT TẮT KHU PHỐ
+        const kpMatch = query.match(/^kp\s*0?(\d+)$/);
+        let matchKhuPho = false;
+        if (kpMatch) {
+          const kpNum = kpMatch[1];
+          const pKP = String(p.khuPho || '').replace(/\D/g, '');
+          matchKhuPho = pKP === kpNum;
         }
 
-        // 2. Khu Phố Match (Smart Abbreviation: kpX, kp X, kp0X)
-        let matchKP = normKP.includes(normQ);
-        const kpAbbrMatch = normQ.match(/^(kp|khu\s*pho)\s*0?(\d{1,2})$/i);
-        if (kpAbbrMatch) {
-          const kpNum = parseInt(kpAbbrMatch[2], 10);
-          if (kpNum >= 1 && kpNum <= 18) {
-            matchKP = kpDigits === String(kpNum);
-          }
-        } else if (!matchKP && /^\d{1,2}$/.test(rawQ)) {
-          // Chỉ gõ số 1-18
-          const parsedNum = parseInt(rawQ, 10);
-          if (parsedNum >= 1 && parsedNum <= 18) {
-            matchKP = kpDigits === String(parsedNum);
-          }
-        }
-
-        // 3. Phone Match (only when >= 3 digits)
-        const matchPhone = digitsOnly.length >= 3 ? phoneClean.includes(digitsOnly) : false;
-
-        // 4. Role, Other Roles, Address
-        const matchRole = normRole.includes(normQ);
-        const matchOther = normOther.includes(normQ);
-        const matchAddress = normAddress.includes(normQ);
-
-        // Explicit STT search
-        const matchSTT = normQ.startsWith('stt') && digitsOnly.length > 0 && String(p.stt || '').includes(digitsOnly);
-
-        if (!matchName && !matchKP && !matchPhone && !matchRole && !matchOther && !matchAddress && !matchSTT) {
+        if (!matchName && !matchPhone && !matchKhuPho) {
           return false;
         }
       }
