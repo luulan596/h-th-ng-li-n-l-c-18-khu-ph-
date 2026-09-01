@@ -4,14 +4,18 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 
-// Đăng ký Service Worker cho Progressive Web App (PWA)
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((reg) => console.log('[PWA] Service Worker đăng ký thành công:', reg.scope))
-      .catch((err) => console.warn('[PWA] Lỗi đăng ký Service Worker:', err));
-  });
-}
+import { registerSW } from 'virtual:pwa-register';
+
+// Tự động cập nhật Service Worker khi có bản mới
+registerSW({
+  onNeedRefresh() {
+    console.log('[PWA] Phát hiện phiên bản mới, đang tự động làm mới...');
+    window.location.reload();
+  },
+  onOfflineReady() {
+    console.log('[PWA] Ứng dụng đã sẵn sàng sử dụng ngoại tuyến.');
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
