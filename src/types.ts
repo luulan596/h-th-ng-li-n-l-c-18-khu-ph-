@@ -3,6 +3,7 @@ export interface Personnel {
   stt: number;
   khuPho: string; // e.g. "Khu phố 1", "Khu phố 2"...
   hoTen: string;
+  nam_sinh?: number | string;
   namSinhNam?: number | string;
   namSinhNu?: number | string;
   gender?: 'Nam' | 'Nữ' | '';

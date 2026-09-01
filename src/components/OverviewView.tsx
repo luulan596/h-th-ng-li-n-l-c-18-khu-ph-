@@ -69,6 +69,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     // 3. Tính CƠ CẤU ĐỘ TUỔI
     const currentYear = 2026;
     let under40 = 0, age40_50 = 0, age51_60 = 0, over60 = 0;
+    
     targetList.forEach(p => {
       const raw = (p as any).nam_sinh || (p as any).namSinh || p.namSinhNam || p.namSinhNu;
       const birthYear = raw ? parseInt(String(raw).replace(/\D/g, ''), 10) : null;
