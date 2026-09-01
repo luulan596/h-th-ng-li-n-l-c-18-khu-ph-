@@ -15,7 +15,7 @@ export default defineConfig(() => {
         devOptions: {
           enabled: true,
         },
-        includeAssets: ['mat_tran_logo.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+        includeAssets: ['mat_tran_logo.svg', 'pwa-icon.png'],
         manifest: {
           name: 'Hệ thống Liên lạc Ban Công tác Mặt trận 18 Khu phố',
           short_name: 'Mặt Trận 18 KP',
@@ -28,17 +28,13 @@ export default defineConfig(() => {
           scope: '/',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: '/pwa-icon.png',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/png',
+              purpose: 'any maskable'
             },
             {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            },
-            {
-              src: 'maskable-icon-512x512.png',
+              src: '/pwa-icon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
