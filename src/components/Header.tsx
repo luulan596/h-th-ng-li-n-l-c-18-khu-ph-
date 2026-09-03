@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Bell } from 'lucide-react';
 import { SyncStatus } from '../types';
 
 interface HeaderProps {
@@ -7,6 +7,8 @@ interface HeaderProps {
   onOpenAppsScriptModal: () => void;
   onRefreshData: () => void;
   onOpenFeedback?: () => void;
+  onOpenNotification?: () => void;
+  isNotificationGranted?: boolean;
   totalPersonnel: number;
   totalKhuPho: number;
 }
@@ -14,6 +16,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   syncStatus,
   onRefreshData,
+  onOpenNotification,
+  isNotificationGranted = false,
 }) => {
   return (
     <header className="relative bg-white text-slate-900 shadow-sm border-b border-slate-200">
@@ -37,6 +41,22 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Info & Actions */}
           <div className="flex items-center flex-wrap justify-center md:justify-end gap-2.5">
+            {/* Notification Bell with pulsing red dot if not granted */}
+            <button
+              onClick={onOpenNotification}
+              className="relative p-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 transition-colors"
+              title={isNotificationGranted ? 'Thông báo hệ thống (Đã bật)' : 'Thông báo hệ thống (Chưa cấp quyền - Nhấp để bật)'}
+              aria-label="Thông báo hệ thống"
+            >
+              <Bell className="w-4 h-4 text-slate-700" />
+              {!isNotificationGranted && (
+                <>
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-600 rounded-full animate-ping"></span>
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white"></span>
+                </>
+              )}
+            </button>
+
             {/* Manual Refresh Button */}
             <button
               onClick={onRefreshData}
@@ -53,5 +73,6 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
 
 

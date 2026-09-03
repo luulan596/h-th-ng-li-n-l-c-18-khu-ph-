@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, MapPin, Landmark, BarChart3, Mail, QrCode } from 'lucide-react';
+import { Users, MapPin, Landmark, LayoutGrid, Mail } from 'lucide-react';
 import { TabType } from '../types';
 
 interface BottomNavProps {
@@ -58,15 +58,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
           <span>Bản đồ</span>
         </button>
 
-        {/* Thống kê Stats Tab */}
+        {/* Tiện ích Utility Tab */}
         <button
           onClick={() => onChangeTab('STATS')}
           className={`flex flex-col items-center justify-center gap-0.5 text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider transition-colors ${
-            activeTab === 'STATS' ? 'text-red-700' : 'text-slate-400 hover:text-slate-700'
+            activeTab === 'STATS' ? 'text-red-700 font-extrabold' : 'text-slate-400 hover:text-slate-700'
           }`}
         >
-          <BarChart3 className={`w-5 h-5 ${activeTab === 'STATS' ? 'text-red-700 stroke-[2.5]' : ''}`} />
-          <span>Thống kê</span>
+          <LayoutGrid className={`w-5 h-5 ${activeTab === 'STATS' ? 'text-red-700 stroke-[2.5]' : ''}`} />
+          <span>Tiện ích</span>
         </button>
 
       </div>

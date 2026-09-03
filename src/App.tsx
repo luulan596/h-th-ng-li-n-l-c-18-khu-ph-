@@ -14,12 +14,20 @@ import { RedSitesView } from './components/RedSitesView';
 import { ExcelImportModal } from './components/ExcelImportModal';
 import { DemocraticMailboxView } from './components/DemocraticMailboxView';
 import { OverviewView } from './components/OverviewView';
-import { fetchAllPersonnel, fetchAllHeadquarters, fetchAllRedSites } from './services';
+import { UtilitiesView } from './components/UtilitiesView';
+import {
+  fetchAllPersonnel,
+  fetchAllHeadquarters,
+  fetchAllRedSites,
+  registerPushSubscriber,
+  VAPID_PUBLIC_KEY,
+  urlBase64ToUint8Array
+} from './services';
 
 import { Personnel, FilterState, SyncStatus, Headquarters, RedSite, TabType } from './types';
 import { INITIAL_PERSONNEL_DATA, BAN_THUONG_TRUC_DATA, ADMINISTRATIVE_HEADQUARTERS, INITIAL_RED_SITES_DATA } from './data/initialData';
 import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isThanhVien, isPartyOfficial, removeVietnameseTones } from './utils/helpers';
-import { Grid, Table, Plus, Download, RefreshCw, Database, MapPin, Users, Landmark, FileSpreadsheet, RotateCcw, Mail, BarChart3 } from 'lucide-react';
+import { Grid, Table, Plus, Download, RefreshCw, Database, MapPin, Users, Landmark, FileSpreadsheet, RotateCcw, Mail, BarChart3, Bell } from 'lucide-react';
 
 export default function App() {
   // --- Persistent Local & Google Sheet Data State ---
@@ -111,6 +119,92 @@ export default function App() {
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
+
+  // --- Notification System States & Mechanism ---
+  const [isNotificationGranted, setIsNotificationGranted] = useState<boolean>(() => {
+    return typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  });
+  const [showNotificationBanner, setShowNotificationBanner] = useState(false);
+  const [isSadChibi, setIsSadChibi] = useState(false);
+
+  // Trigger floating notification banner after 1.5 seconds if not dismissed
+  useEffect(() => {
+    const isDismissed = sessionStorage.getItem('mttq_notif_banner_dismissed');
+    const isGranted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+    if (!isDismissed && !isGranted) {
+      const timer = setTimeout(() => {
+        setShowNotificationBanner(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Play crisp "ting" chime using Web Audio API
+  const playTingSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(987.77, ctx.currentTime); // B5 note
+      osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.08); // E6 note
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.8);
+    } catch (e) {
+      console.warn('Audio ting sound error:', e);
+    }
+  };
+
+  const handleEnableNotification = async () => {
+    playTingSound();
+    try {
+      if (typeof Notification !== 'undefined') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          setIsNotificationGranted(true);
+          // 1. Đăng ký nhận thông báo chuẩn xác với VAPID_PUBLIC_KEY
+          try {
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+              const registration = await navigator.serviceWorker.ready;
+              try {
+                const subscription = await registration.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+                console.log('[Push] Subscription đăng ký thành công:', subscription);
+              } catch (subErr) {
+                console.warn('[Push] pushManager.subscribe:', subErr);
+              }
+            }
+            // 2. Lưu đối tượng subscription vào bảng push_subscribers trên Supabase (tránh trùng lặp)
+            await registerPushSubscriber();
+          } catch (regErr) {
+            console.warn('[Push] Lỗi khi lưu mã thiết bị push_subscribers:', regErr);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Notification permission error:', e);
+    }
+    setShowNotificationBanner(false);
+    sessionStorage.setItem('mttq_notif_banner_dismissed', 'true');
+  };
+
+  const handleDismissNotification = () => {
+    setIsSadChibi(true);
+    setTimeout(() => {
+      setIsSadChibi(false);
+      setShowNotificationBanner(false);
+      sessionStorage.setItem('mttq_notif_banner_dismissed', 'true');
+    }, 1800);
+  };
 
   const [searchParams] = useSearchParams();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -445,6 +539,15 @@ export default function App() {
           onOpenAppsScriptModal={() => setIsAppsScriptModalOpen(true)}
           onRefreshData={() => fetchFromGoogleSheet()}
           onOpenFeedback={() => setActiveTab('FEEDBACK')}
+          onOpenNotification={() => {
+            if (isNotificationGranted) {
+              alert('Hệ thống thông báo Mặt trận đã được kích hoạt. Bạn sẽ nhận được các thông báo khẩn và nhắc lịch công tác.');
+            } else {
+              setShowNotificationBanner(true);
+              setIsSadChibi(false);
+            }
+          }}
+          isNotificationGranted={isNotificationGranted}
           totalPersonnel={personnelList.length}
           totalKhuPho={18}
         />
@@ -637,9 +740,9 @@ export default function App() {
           />
         )}
 
-        {/* Tab 5: Overview & Stats View (Tổng quan & Thống kê cơ cấu nhân sự) */}
+        {/* Tab 5: Tiện ích (Thống kê, Lịch công tác, Văn bản, Đóng góp ý kiến) */}
         {activeTab === 'STATS' && (
-          <OverviewView
+          <UtilitiesView
             personnelList={personnelList}
             headquartersList={headquartersList}
             redSitesList={redSitesList}
@@ -647,10 +750,58 @@ export default function App() {
               setFilters((prev) => ({ ...prev, selectedKhuPho: kp }));
               setActiveTab('LIST');
             }}
+            onNavigateToFeedback={() => setActiveTab('FEEDBACK')}
           />
         )}
 
       </main>
+
+      {/* Floating Notification Permission Banner (Xin quyền thông báo sau 1.5s) */}
+      {showNotificationBanner && (
+        <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-6 sm:w-96 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-gradient-to-r from-red-950 via-red-900 to-amber-950 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400/50 backdrop-blur-md">
+            {isSadChibi ? (
+              <div className="flex flex-col items-center justify-center py-3 px-2 text-center animate-in fade-in duration-300">
+                <span className="text-5xl mb-2 animate-bounce select-none">🥺</span>
+                <p className="text-xs sm:text-sm font-medium text-amber-100 leading-relaxed max-w-xs">
+                  Dạ, vậy lát nữa Mặt trận xin phép nhắc lại cô/chú sau nhé!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-400 text-red-950 flex items-center justify-center shrink-0 shadow-md">
+                    <Bell className="w-5 h-5 fill-red-950 animate-bounce" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-300">
+                      BẬT THÔNG BÁO MẶT TRẬN
+                    </h4>
+                    <p className="text-xs text-red-100/90 mt-0.5 leading-snug">
+                      Nhận thông báo tức thời về lịch họp khẩn, công tác Mặt trận và tin tức mới nhất từ Ban Thường trực Phường Bình Tiên.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-red-800/60">
+                  <button
+                    onClick={handleDismissNotification}
+                    className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold transition-colors"
+                  >
+                    LÁT NỮA
+                  </button>
+                  <button
+                    onClick={handleEnableNotification}
+                    className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-red-950 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-all active:scale-95"
+                  >
+                    <span>BẬT NGAY</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick Call & Contact Modal */}
       <QuickCallModal

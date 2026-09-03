@@ -106,3 +106,24 @@ export interface SyncStatus {
   statusMessage: string;
   isLoading: boolean;
 }
+
+export interface PushSubscriber {
+  id?: string;
+  endpoint: string;
+  p256dh?: string | null;
+  auth?: string | null;
+  subscription?: any;
+  user_agent?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ScheduledNotification {
+  id: string;
+  tieu_de: string;
+  noi_dung: string;
+  thoi_gian_gui: string;
+  trang_thai: 'pending' | 'sent' | 'cancelled' | string;
+  created_at?: string;
+  nguoi_tao?: string;
+}

@@ -105,3 +105,17 @@
   animation: selected-pin-jump 1.2s infinite ease-in-out;
 }
 
+/* Wobble animation when clicking utility cards */
+@keyframes lacLuThe {
+  0% { transform: scale(1) rotate(0deg); }
+  20% { transform: scale(0.97) rotate(-3.5deg); }
+  40% { transform: scale(1.02) rotate(3deg); }
+  60% { transform: scale(0.99) rotate(-2deg); }
+  80% { transform: scale(1.01) rotate(1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.animate-lac-lu {
+  animation: lacLuThe 0.35s ease-in-out;
+}
+

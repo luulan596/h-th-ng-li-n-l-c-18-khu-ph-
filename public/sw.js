@@ -82,3 +82,45 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// 4. Xử lý nhận Push Notification từ máy chủ / Supabase
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'Mặt trận Tổ quốc Phường Bình Tiên',
+    body: 'Bạn có thông báo mới từ Ban Thường trực.'
+  };
+
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const title = data.title || data.tieu_de || 'Thông báo Mặt trận';
+  const options = {
+    body: data.body || data.noi_dung || '',
+    icon: '/pwa-192x192.png?v=2026',
+    badge: '/mat_tran_logo.svg',
+    vibrate: [200, 100, 200],
+    data: {
+      url: data.url || '/'
+    }
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// 5. Xử lý sự kiện nhấp vào thông báo
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
+  );
+});

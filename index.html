@@ -37,6 +37,20 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <!-- SheetJS for Excel (.xlsx, .xls) import -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Animation keyframes for Utility cards -->
+    <style>
+      @keyframes lacLuThe {
+        0% { transform: scale(1) rotate(0deg); }
+        20% { transform: scale(0.97) rotate(-3.5deg); }
+        40% { transform: scale(1.02) rotate(3deg); }
+        60% { transform: scale(0.99) rotate(-2deg); }
+        80% { transform: scale(1.01) rotate(1deg); }
+        100% { transform: scale(1) rotate(0deg); }
+      }
+      .animate-lac-lu {
+        animation: lacLuThe 0.35s ease-in-out;
+      }
+    </style>
   </head>
   <body class="bg-slate-50 text-slate-800 antialiased font-sans selection:bg-red-900 selection:text-amber-200">
     <div id="root"></div>
