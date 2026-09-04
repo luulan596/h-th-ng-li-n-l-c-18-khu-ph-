@@ -18,6 +18,8 @@ export const RED_ADDRESSES_DATA: RedSite[] = [
     imageUrl: '/pham-van-chi (1).png',
     galleryImages: [
       '/pham-van-chi (1).png',
+      '/pham-van-chi.png',
+      '/pham-van-chi.jpg',
     ],
     toaDo: {
       lat: 10.74450,
@@ -37,6 +39,8 @@ export const RED_ADDRESSES_DATA: RedSite[] = [
     imageUrl: '/nha-truyen-thong-nguoi-hoa (1).png',
     galleryImages: [
       '/nha-truyen-thong-nguoi-hoa (1).png',
+      '/nha-truyen-thong-nguoi-hoa.png',
+      '/nha-truyen-thong-nguoi-hoa.jpg',
     ],
     toaDo: {
       lat: 10.74830,
@@ -56,6 +60,8 @@ export const RED_ADDRESSES_DATA: RedSite[] = [
     imageUrl: '/ham-in-hoa-van (1).png',
     galleryImages: [
       '/ham-in-hoa-van (1).png',
+      '/ham-in-hoa-van.png',
+      '/ham-in-hoa-van.jpg',
     ],
     toaDo: {
       lat: 10.74980,

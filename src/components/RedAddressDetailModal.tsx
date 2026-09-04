@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Landmark, MapPin, Navigation, Image as ImageIcon, X, Clock, Ticket, ExternalLink, Sparkles } from 'lucide-react';
 import { RedSite } from '../types';
+import { handleImageError } from './RedAddressesView';
 
 interface RedAddressDetailModalProps {
   site: RedSite | null;
@@ -125,6 +126,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
+                  onError={(e) => handleImageError(e, site.name || site.imageUrl)}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -185,6 +187,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
+                  onError={(e) => handleImageError(e, site.name || galleryList[activeImageIndex] || site.imageUrl)}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -208,6 +211,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                         alt="thumb"
                         loading="eager"
                         decoding="async"
+                        onError={(e) => handleImageError(e, site.name || img)}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />

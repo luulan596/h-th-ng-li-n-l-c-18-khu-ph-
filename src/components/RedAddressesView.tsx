@@ -16,6 +16,58 @@ export const formatImageUrl = (url?: string) => {
   return url;
 };
 
+// Smart fallback candidates mapping for 3 historical red addresses
+export const getFallbackImageCandidates = (siteOrUrl?: string): string[] => {
+  const query = (siteOrUrl || '').toLowerCase();
+  if (query.includes('pham-van-chi') || query.includes('phạm văn chí') || query.includes('bình hòa')) {
+    return [
+      '/pham-van-chi (1).png',
+      '/pham-van-chi.png',
+      '/pham-van-chi.jpg',
+    ];
+  }
+  if (query.includes('nguoi-hoa') || query.includes('người hoa') || query.includes('lưu vinh')) {
+    return [
+      '/nha-truyen-thong-nguoi-hoa (1).png',
+      '/nha-truyen-thong-nguoi-hoa.png',
+      '/nha-truyen-thong-nguoi-hoa.jpg',
+    ];
+  }
+  if (query.includes('hoa-van') || query.includes('hoa vận') || query.includes('gia phú') || query.includes('hầm in')) {
+    return [
+      '/ham-in-hoa-van (1).png',
+      '/ham-in-hoa-van.png',
+      '/ham-in-hoa-van.jpg',
+    ];
+  }
+  return ['/pham-van-chi (1).png', '/pham-van-chi.png', '/pham-van-chi.jpg'];
+};
+
+// Automatically fallback to alternative public paths on error
+export const handleImageError = (
+  e: React.SyntheticEvent<HTMLImageElement, Event>,
+  siteIdentifier?: string
+) => {
+  const imgElement = e.currentTarget;
+  const currentSrc = imgElement.getAttribute('src') || '';
+  const candidates = getFallbackImageCandidates(siteIdentifier || currentSrc);
+
+  let nextIdx = parseInt(imgElement.dataset.fallbackIndex || '-1', 10);
+  if (nextIdx === -1) {
+    const found = candidates.findIndex((c) => currentSrc.includes(encodeURI(c)) || currentSrc.includes(c));
+    nextIdx = found >= 0 ? found + 1 : 0;
+  } else {
+    nextIdx += 1;
+  }
+
+  if (nextIdx < candidates.length) {
+    imgElement.dataset.fallbackIndex = String(nextIdx);
+    imgElement.src = candidates[nextIdx];
+  } else {
+    imgElement.onerror = null;
+  }
+};
+
 interface RedAddressesViewProps {
   redSitesList: RedSite[];
   onAddRedSite?: (newItem: RedSite) => void;
@@ -156,6 +208,7 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
+                    onError={(e) => handleImageError(e, site.name || site.imageUrl)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />

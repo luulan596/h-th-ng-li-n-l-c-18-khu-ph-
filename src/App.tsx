@@ -96,23 +96,22 @@ export default function App() {
 
   // --- Red Sites State ---
   const [redSitesList, setRedSitesList] = useState<RedSite[]>(() => {
-    const saved = localStorage.getItem('mt_red_sites_data_v6');
+    const saved = localStorage.getItem('mt_red_sites_data_v7') || localStorage.getItem('mt_red_sites_data_v6');
     if (saved) {
       try {
         const parsed: RedSite[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map((p) => p.id));
+        const defaultMap = new Map(INITIAL_RED_SITES_DATA.map((s) => [s.id, s]));
+        const updated = parsed.map((item) => defaultMap.get(item.id) || item);
+        const existingIds = new Set(updated.map((p) => p.id));
         const missingDefaults = INITIAL_RED_SITES_DATA.filter((item) => !existingIds.has(item.id));
-        if (missingDefaults.length > 0) {
-          return [...parsed, ...missingDefaults];
-        }
-        return parsed;
+        return [...updated, ...missingDefaults];
       } catch (e) { /* fallback */ }
     }
     return INITIAL_RED_SITES_DATA;
   });
 
   useEffect(() => {
-    localStorage.setItem('mt_red_sites_data_v6', JSON.stringify(redSitesList));
+    localStorage.setItem('mt_red_sites_data_v7', JSON.stringify(redSitesList));
   }, [redSitesList]);
 
   // --- Filter State ---
