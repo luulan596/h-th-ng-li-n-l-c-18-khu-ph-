@@ -113,7 +113,7 @@ export async function saveHeadquarters(headquarters: Headquarters): Promise<bool
       const payload = {
         ma_tru_so: headquarters.id,
         ten_tru_so: headquarters.tenTruSo,
-        loai_diem: headquarters.loaiTruSo === 'CO_QUAN' ? 'CO_QUAN' : (headquarters.loaiTruSo === 'khu_pho' ? 'KHU_PHO' : headquarters.loaiTruSo),
+        loai_diem: (headquarters.loaiTruSo as string) === 'CO_QUAN' || headquarters.loaiDiem === 'CO_QUAN' ? 'CO_QUAN' : (headquarters.loaiTruSo === 'khu_pho' ? 'KHU_PHO' : (headquarters.loaiTruSo || 'KHU_PHO')),
         khu_pho: headquarters.khuPhoThuocVong,
         dia_chi: headquarters.diaChi,
         so_dien_thoai: headquarters.soDienThoai,

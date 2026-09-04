@@ -73,9 +73,105 @@ export const BAN_THUONG_TRUC_DATA: Personnel[] = [
   }
 ];
 
+export const CHUYEN_VIEN_DATA: Personnel[] = [
+  {
+    id: 'cv-1',
+    stt: 1,
+    khuPho: 'Cơ quan Mặt trận',
+    hoTen: 'Phùng Dung Hạnh',
+    namSinhNam: '',
+    namSinhNu: 1986,
+    gender: 'Nữ',
+    chucDanhMatTran: 'Chuyên viên UBMTTQVN phường',
+    chucDanhKhac: 'Phụ trách công tác Dân tộc - Tôn giáo & Thi đua khen thưởng',
+    diaChi: 'Ủy ban MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0903112233',
+    isCapUy: false,
+    ghiChu: 'Chuyên viên Cơ quan Mặt trận Phường'
+  },
+  {
+    id: 'cv-2',
+    stt: 2,
+    khuPho: 'Cơ quan Mặt trận',
+    hoTen: 'Nguyễn Quốc Huy',
+    namSinhNam: 1990,
+    namSinhNu: '',
+    gender: 'Nam',
+    chucDanhMatTran: 'Chuyên viên UBMTTQVN phường',
+    chucDanhKhac: 'Phụ trách Công nghệ thông tin & Chuyển đổi số Mặt trận',
+    diaChi: 'Ủy ban MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0908223344',
+    isCapUy: false,
+    ghiChu: 'Chuyên viên Cơ quan Mặt trận Phường'
+  },
+  {
+    id: 'cv-3',
+    stt: 3,
+    khuPho: 'Cơ quan Mặt trận',
+    hoTen: 'Lê Hồng Thái Dương',
+    namSinhNam: '',
+    namSinhNu: 1992,
+    gender: 'Nữ',
+    chucDanhMatTran: 'Chuyên viên UBMTTQVN phường',
+    chucDanhKhac: 'Phụ trách Quỹ Vì người nghèo & An sinh xã hội',
+    diaChi: 'Ủy ban MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0909334455',
+    isCapUy: false,
+    ghiChu: 'Chuyên viên Cơ quan Mặt trận Phường'
+  },
+  {
+    id: 'cv-4',
+    stt: 4,
+    khuPho: 'Cơ quan Mặt trận',
+    hoTen: 'Nguyễn Thị Gái',
+    namSinhNam: '',
+    namSinhNu: 1985,
+    gender: 'Nữ',
+    chucDanhMatTran: 'Chuyên viên UBMTTQVN phường',
+    chucDanhKhac: 'Phụ trách công tác Tuyên truyền & Nắm bắt dư luận xã hội',
+    diaChi: 'Ủy ban MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0918445566',
+    isCapUy: false,
+    ghiChu: 'Chuyên viên Cơ quan Mặt trận Phường'
+  },
+  {
+    id: 'cv-5',
+    stt: 5,
+    khuPho: 'Cơ quan Mặt trận',
+    hoTen: 'Nguyễn Ngọc Phương Thảo',
+    namSinhNam: '',
+    namSinhNu: 1995,
+    gender: 'Nữ',
+    chucDanhMatTran: 'Chuyên viên UBMTTQVN phường',
+    chucDanhKhac: 'Phụ trách Văn phòng - Thống kê & Tổng hợp báo cáo',
+    diaChi: 'Ủy ban MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0938556677',
+    isCapUy: false,
+    ghiChu: 'Chuyên viên Cơ quan Mặt trận Phường'
+  },
+  {
+    id: 'cv-6',
+    stt: 6,
+    khuPho: 'Cơ quan Mặt trận',
+    hoTen: 'Lý Khánh Thuận',
+    namSinhNam: 1993,
+    namSinhNu: '',
+    gender: 'Nam',
+    chucDanhMatTran: 'Chuyên viên UBMTTQVN phường',
+    chucDanhKhac: 'Phụ trách Thanh tra nhân dân & Giám sát cộng đồng',
+    diaChi: 'Ủy ban MTTQ Việt Nam Phường Bình Tiên (130 Phạm Văn Chí)',
+    soDienThoai: '0907667788',
+    isCapUy: false,
+    ghiChu: 'Chuyên viên Cơ quan Mặt trận Phường'
+  }
+];
+
 export const INITIAL_PERSONNEL_DATA: Personnel[] = [
   // --- BAN THƯỜNG TRỰC ỦY BAN MTTQ VIỆT NAM PHƯỜNG BÌNH TIÊN (5 ĐỒNG CHÍ) ---
   ...BAN_THUONG_TRUC_DATA,
+
+  // --- CƠ QUAN MẶT TRẬN - CÁC CHUYÊN VIÊN ---
+  ...CHUYEN_VIEN_DATA,
 
   // --- KHU PHỐ 1 ---
   {
@@ -1485,7 +1581,6 @@ export const INITIAL_RED_SITES_DATA: RedSite[] = [
       'https://images.unsplash.com/photo-1599386032032-4951d69123a8?auto=format&fit=crop&q=80&w=1000',
       'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1000'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     toaDo: {
       lat: 10.74450,
       lng: 106.63480,
@@ -1499,14 +1594,13 @@ export const INITIAL_RED_SITES_DATA: RedSite[] = [
     name: 'Nhà Truyền Thống Cách Mạng Người Hoa',
     category: 'Di tích Lịch sử Cấp Thành phố',
     address: 'Số 91 đường Phạm Văn Chí - Phường Bình Tiên, TP.HCM',
-    summary: 'Với truyền thống yêu nước, truyền thống cách mạng, đồng bào người Việt cũng như người Hoa ở địa phương, đã một lòng một dạ theo Đảng và trong suốt hai cuộc kháng chiến chống thực dân Pháp và đế quốc Mỹ, địa phương luôn là niềm tin, chỗ dựa vững chắc của Thành phố, nhiều vị lãnh đạo Trung ương, Thành ủy đã từng có thời gian hoạt động, chỉ đạo phong trào đấu tranh cách mạng tại địa bàn trong sự bảo vệ, đùm bọc, che chở của nhiều cơ sở cách mạng người Việt và người Hoa, trong đó có gia đình chú Lưu Vinh (Lưu Vinh Phong) - một gia đình người Hoa yêu nước.',
-    detailedHistory: 'Có thể nói, căn nhà 91 Đường Phạm Văn Chí rất xứng đáng là một trong những địa chỉ đỏ trong thời kỳ kháng chiến chống Mỹ cứu nước cũng như trong sự nghiệp xây dựng và bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa. Do giá trị lịch sử cũng như việc phát huy được giá trị trong công tác giáo dục truyền thống của căn nhà 91 Đường Phạm Văn Chí sau khi trở thành Nhà truyền thống người Hoa thành phố, nên ngày 15/10/2008, Ủy ban nhân dân thành phố Hồ Chí Minh đã ban hành Quyết định số 4377/QĐ-UBND công nhận căn nhà số 91 Phạm Văn Chí là Di tích lịch sử cấp Thành phố.',
+    summary: 'Với truyền thống yêu nước, truyền thống cách mạng, đồng bào người Việt cũng như người Hoa ở Quận 6, đã một lòng một dạ theo Đảng và trong suốt hai cuộc kháng chiến chống thực dân Pháp và đế quốc Mỹ, Quận 6 luôn là niềm tin, chỗ dựa vững chắc của Thành phố, nhiều vị lãnh đạo Trung ương, Thành ủy đã từng có thời gian hoạt động, chỉ đạo phong trào đấu tranh cách mạng tại địa bàn Quận 6 trong sự bảo vệ, đùm bọc, che chở của nhiều cơ sở cách mạng người Việt và người Hoa, trong đó có gia đình chú Lưu Vinh (Lưu Vinh Phong) - một gia đình người Hoa yêu nước quận 6.',
+    detailedHistory: 'Có thể nói, căn nhà 91 Đường Phạm Văn Chí rất xứng đáng là một trong những địa chỉ đỏ của Quận 6 trong thời kỳ kháng chiến chống Mỹ cứu nước cũng như trong sự nghiệp xây dựng và bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa. Do giá trị lịch sử cũng như việc phát huy được giá trị trong công tác giáo dục truyền thống của căn nhà 91 Đường Phạm Văn Chí sau khi trở thành Nhà truyền thống người Hoa thành phố, nên ngày 15/10/2008, Ủy ban nhân dân thành phố Hồ Chí Minh đã ban hành Quyết định số 4377/QĐ-UBND công nhận căn nhà số 91 Phạm Văn Chí là Di tích lịch sử cấp Thành phố.',
     imageUrl: 'https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&q=80&w=1000',
     galleryImages: [
       'https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&q=80&w=1000',
       'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&q=80&w=1000'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     toaDo: {
       lat: 10.74830,
       lng: 106.65080,
@@ -1520,14 +1614,13 @@ export const INITIAL_RED_SITES_DATA: RedSite[] = [
     name: 'Hầm In Bí Mật Của Ban Tuyên Huấn Hoa Vận',
     category: 'Di tích Lịch sử Cấp Quốc gia',
     address: 'Số 341/10 đường Gia Phú - Phường Bình Tiên, TP.HCM',
-    summary: 'Năm 1961, bộ phận Tuyên huấn của Ban cán sự Công vận người Hoa đã tổ chức một sở bí mật in truyền đơn bằng chữ Hoa ngay trong nội thành nhằm góp phần phổ biến kịp thời những tin tức thời sự nóng bỏng của quân và dân trên chiến trường, các chủ trương, chính sách của Mặt trận, cổ vũ, động viên phong trào đấu tranh của các tầng lớp nhân dân trong thành phố.',
-    detailedHistory: 'Ngày 26/09/1998, Bộ Văn hóa Thông tin nay là Bộ Văn hóa, Thể thao, Thể thao đã ban hành Quyết định số 2009/1998/QĐ-BVHTT công nhận Di tích lịch sử Hầm bí mật in tài liệu của Ban Tuyên huấn Hoa vận trong thời kỳ chống Mỹ cứu nước tại số 341/10 đường Gia Phú, Phường Bình Tiên.\n\nĐịa chỉ này là nơi để nhân dân tham quan, tìm hiểu, nghiên cứu các giá trị về lịch sử, các hiện vật và truyền thống đấu tranh chống Mỹ của đồng bào Hoa, thành phố Hồ Chí Minh nói riêng và của dân tộc Việt Nam nói chung nhằm giáo dục truyền thống đấu tranh cách mạng cho nhân dân, cho các thế hệ thanh thiếu niên hôm nay và mai sau.',
+    summary: 'Năm 1961, bộ phận Tuyên huấn của Ban cán sự Công vận người Hoa đã tổ chức một sở bí mật in truyền đơn bằng chữ Hoa ngay trong nội thành nhằm góp phần phổ biến kịp thời những tin tức thời sự nóng bỏng của quân và dân trên chiến trường, các chủ trương, chính sách của Mặt trận, cổ vũ, động viên phong trào đấu tranh của các tầng lớp nhân dân trong thành phố. Ngày 26/09/1998, Bộ Văn hóa Thông tin nay là Bộ Văn hóa, Thể dục, Thể thao đã ban hành Quyết định số 2009/1998/QĐ-BVHTT công nhận Di tích lịch sử Hầm bí mật in tài liệu của Ban Tuyên huấn Hoa vận trong thời kỳ chống Mỹ cứu nước tại số 341/10 đường Gia Phú, phường 1- quận 6.',
+    detailedHistory: 'Địa chỉ này là nơi để nhân dân tham quan, tìm hiểu, nghiên cứu các giá trị về lịch sử, các hiện vật và truyền thống đấu tranh chống Mỹ của đồng bào Hoa quận 6, thành phố Hồ Chí Minh nói riêng và của dân tộc Việt Nam nói chung nhằm giáo dục truyền thống đấu tranh cách mạng cho nhân dân, cho các thế hệ thanh thiếu niên hôm nay và mai sau.',
     imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&q=80&w=1000',
     galleryImages: [
       'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&q=80&w=1000',
       'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&q=80&w=1000'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     toaDo: {
       lat: 10.74980,
       lng: 106.65020,

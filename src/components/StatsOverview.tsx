@@ -1,11 +1,13 @@
 import React from 'react';
 import { Personnel } from '../types';
-import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isPartyOfficial } from '../utils/helpers';
-import { Users, Award, Shield, UserCheck, Star } from 'lucide-react';
+import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial } from '../utils/helpers';
+import { Users, Award, Shield, UserCheck, Star, Briefcase } from 'lucide-react';
+
+export type QuickFilterType = 'BTT' | 'CHUYEN_VIEN' | 'TRUONG_BAN' | 'PHO_BAN' | 'CAP_UY' | 'ALL';
 
 interface StatsOverviewProps {
   personnelList: Personnel[];
-  onSelectQuickFilter: (type: 'BTT' | 'TRUONG_BAN' | 'PHO_BAN' | 'CAP_UY' | 'ALL') => void;
+  onSelectQuickFilter: (type: QuickFilterType) => void;
   currentFilterType: string;
   redSitesCount?: number;
   onSelectRedSites?: () => void;
@@ -18,15 +20,17 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
 }) => {
   const total = personnelList.length;
   const bttCount = personnelList.filter(isBanThuongTruc).length;
+  const chuyenVienCount = personnelList.filter(isChuyenVien).length;
   const truongBanCount = personnelList.filter(isKeyLeader).length;
   const phoBanCount = personnelList.filter(isDeputyLeader).length;
   const capUyCount = personnelList.filter(isPartyOfficial).length;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
       
       {/* Tất cả cán bộ */}
       <div
+        id="btn-filter-all"
         onClick={() => onSelectQuickFilter('ALL')}
         className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border text-xs transition-all cursor-pointer select-none ${
           currentFilterType === 'ALL'
@@ -47,6 +51,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
 
       {/* Ban Thường trực */}
       <div
+        id="btn-filter-btt"
         onClick={() => onSelectQuickFilter('BTT')}
         className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-all cursor-pointer select-none ${
           currentFilterType === 'BTT'
@@ -65,8 +70,30 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
         </span>
       </div>
 
+      {/* Chuyên viên */}
+      <div
+        id="btn-filter-chuyen-vien"
+        onClick={() => onSelectQuickFilter('CHUYEN_VIEN')}
+        className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-all cursor-pointer select-none ${
+          currentFilterType === 'CHUYEN_VIEN'
+            ? 'bg-blue-800 text-white border-blue-900 shadow-sm ring-1 ring-blue-600'
+            : 'bg-white hover:bg-blue-50/60 text-slate-800 border-slate-200 border-l-3 border-l-blue-600'
+        }`}
+      >
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Briefcase className={`w-3.5 h-3.5 shrink-0 ${currentFilterType === 'CHUYEN_VIEN' ? 'text-amber-300' : 'text-blue-600'}`} />
+          <span className="font-bold tracking-tight truncate text-[11px] uppercase">Chuyên viên</span>
+        </div>
+        <span className={`text-xs font-black px-1.5 py-0.5 rounded ml-1 shrink-0 ${
+          currentFilterType === 'CHUYEN_VIEN' ? 'bg-amber-400 text-slate-950' : 'bg-blue-100 text-blue-900'
+        }`}>
+          {chuyenVienCount}
+        </span>
+      </div>
+
       {/* Trưởng ban 18 KP */}
       <div
+        id="btn-filter-truong-ban"
         onClick={() => onSelectQuickFilter('TRUONG_BAN')}
         className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-all cursor-pointer select-none ${
           currentFilterType === 'TRUONG_BAN'
@@ -87,6 +114,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
 
       {/* Phó Trưởng ban 18 KP */}
       <div
+        id="btn-filter-pho-ban"
         onClick={() => onSelectQuickFilter('PHO_BAN')}
         className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-all cursor-pointer select-none ${
           currentFilterType === 'PHO_BAN'
@@ -107,8 +135,9 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
 
       {/* Cấp ủy Chi bộ */}
       <div
+        id="btn-filter-cap-uy"
         onClick={() => onSelectQuickFilter('CAP_UY')}
-        className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-all cursor-pointer select-none col-span-2 sm:col-span-1 ${
+        className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-all cursor-pointer select-none ${
           currentFilterType === 'CAP_UY'
             ? 'bg-red-800 text-white border-red-900 shadow-sm ring-1 ring-red-600'
             : 'bg-white hover:bg-red-50/60 text-slate-800 border-slate-200 border-l-3 border-l-red-600'

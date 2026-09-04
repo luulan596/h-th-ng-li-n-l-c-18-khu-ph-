@@ -60,7 +60,8 @@ export const AdminMap: React.FC<AdminMapProps> = ({
   // Original Custom Icons
   const createCustomIcon = (hq: Headquarters, isSelected: boolean) => {
     const isRedSite = hq.loaiTruSo as any === 'RED_SITE';
-    const isGov = hq.loaiTruSo === 'CO_QUAN' || 
+    const isGov = (hq.loaiTruSo as string) === 'CO_QUAN' || 
+                 hq.loaiDiem === 'CO_QUAN' ||
                  ['CA', 'MTTQ', 'QS', 'TYT', 'UBND'].includes(String(hq.ma_tru_so || '').toUpperCase()) ||
                  !hq.khuPhoThuocVong;
     

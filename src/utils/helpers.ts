@@ -21,14 +21,25 @@ export function removeVietnameseTones(input: any): string {
   return result.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
+export function isChuyenVien(p: Personnel): boolean {
+  if (!p) return false;
+  const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase().trim();
+  const cdk = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase().trim();
+  const id = String(p.id || '').toLowerCase();
+  
+  if (id.startsWith('cv-')) return true;
+  return cd.includes('chuyen vien') || cdk.includes('chuyen vien');
+}
+
 export function isBanThuongTruc(p: Personnel): boolean {
+  if (isChuyenVien(p)) return false;
   if (String(p.khuPho || '') === 'Ban Thường trực' || String(p.id || '').startsWith('btt-')) return true;
   const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
   return cd.includes('chu tich') || cd.includes('thuong truc');
 }
 
 export function isKeyLeader(p: Personnel): boolean {
-  if (isBanThuongTruc(p)) return false;
+  if (isBanThuongTruc(p) || isChuyenVien(p)) return false;
   const cd = removeVietnameseTones(p.chucDanhMatTran || '').trim().toLowerCase();
   const isTruong = cd === 'truong ban' || cd === 'tb' || cd === 'truong ban ctmt' || cd.startsWith('truong ban') || (cd.startsWith('truong') && !cd.includes('chi hoi'));
   const isPho = cd.includes('pho') || cd.includes('p.') || cd.startsWith('p ');
@@ -36,7 +47,7 @@ export function isKeyLeader(p: Personnel): boolean {
 }
 
 export function isDeputyLeader(p: Personnel): boolean {
-  if (isBanThuongTruc(p)) return false;
+  if (isBanThuongTruc(p) || isChuyenVien(p)) return false;
   const cd = removeVietnameseTones(p.chucDanhMatTran || '').trim().toLowerCase();
   return (
     cd.includes('pho') ||
@@ -46,7 +57,7 @@ export function isDeputyLeader(p: Personnel): boolean {
 }
 
 export function isPartyOfficial(p: Personnel): boolean {
-  if (isBanThuongTruc(p)) return false;
+  if (isBanThuongTruc(p) || isChuyenVien(p)) return false;
   if (isKeyLeader(p)) return false;
   if (isDeputyLeader(p)) return false;
 
@@ -72,7 +83,7 @@ export function isPartyOfficial(p: Personnel): boolean {
 }
 
 export function isThanhVien(p: Personnel): boolean {
-  if (isBanThuongTruc(p)) return false;
+  if (isBanThuongTruc(p) || isChuyenVien(p)) return false;
   return !isKeyLeader(p) && !isDeputyLeader(p) && !isPartyOfficial(p);
 }
 

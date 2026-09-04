@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, MapPin, Award, Shield, Copy, Check, MessageCircle, AlertTriangle, Calendar, User } from 'lucide-react';
 import { Personnel } from '../types';
-import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
+import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
 
 interface PersonnelCardProps {
   personnel: Personnel;
@@ -16,6 +16,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const isBTT = isBanThuongTruc(personnel);
+  const isCV = isChuyenVien(personnel);
   const isLeader = isKeyLeader(personnel);
   const isDeputy = isDeputyLeader(personnel);
   const isParty = isPartyOfficial(personnel);
@@ -47,6 +48,8 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   // Border & background scheme - Official Red & Gold Government Styling
   const cardBorderClass = isBTT
     ? 'border-l-4 border-amber-500 bg-gradient-to-r from-red-50 via-amber-50/70 to-white ring-1 ring-amber-400/50 shadow-xs'
+    : isCV
+    ? 'border-l-4 border-blue-600 bg-gradient-to-r from-blue-50/70 via-white to-sky-50/30 shadow-xs border-blue-200'
     : isLeader
     ? 'border-l-4 border-amber-500 bg-gradient-to-r from-amber-50/80 via-white to-red-50/30 shadow-xs border-amber-200/80'
     : isDeputy
@@ -57,6 +60,8 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
 
   const avatarBgClass = isBTT
     ? 'bg-gradient-to-br from-red-700 to-amber-600 text-amber-200 border border-amber-300 shadow-xs'
+    : isCV
+    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white border border-blue-300 shadow-xs'
     : isLeader
     ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-red-950 border border-amber-400 shadow-xs'
     : isDeputy
@@ -77,6 +82,8 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
 
   const roleTextClass = isBTT
     ? 'text-[11.5px] font-bold text-red-950 tracking-tight'
+    : isCV
+    ? 'text-[11px] font-bold text-blue-900 tracking-tight'
     : isLeader
     ? 'text-[11px] font-bold text-amber-900 tracking-tight'
     : isDeputy
@@ -96,7 +103,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
           <div className="flex items-start gap-2.5 min-w-0">
             {/* Avatar Circle */}
             <div className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full font-bold text-xs shadow-2xs ${avatarBgClass}`}>
-              {isBTT ? '⭐' : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
+              {isBTT ? '⭐' : isCV ? '💼' : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
             </div>
 
             <div className="min-w-0 flex-1">
@@ -117,10 +124,16 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
             <>
               {/* Badges Row: Khu phố, Chức vụ kiêm nhiệm, Cấp ủy, Thông tin cá nhân */}
               <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-                {personnel.khuPho && (
-                  <span className="text-[9.5px] font-black px-2 py-0.5 bg-red-900 text-amber-300 rounded-md border border-amber-500/40 uppercase tracking-wider shadow-2xs">
-                    {personnel.khuPho}
+                {isCV ? (
+                  <span className="text-[9.5px] font-black px-2 py-0.5 bg-blue-900 text-sky-200 rounded-md border border-blue-400 uppercase tracking-wider shadow-2xs">
+                    Cơ quan Mặt trận
                   </span>
+                ) : (
+                  personnel.khuPho && (
+                    <span className="text-[9.5px] font-black px-2 py-0.5 bg-red-900 text-amber-300 rounded-md border border-amber-500/40 uppercase tracking-wider shadow-2xs">
+                      {personnel.khuPho}
+                    </span>
+                  )
                 )}
 
                 {/* For Trưởng ban (isLeader): keep only Khu phố badge. For others: show additional tags */}

@@ -60,7 +60,20 @@ export default function App() {
   }, [personnelList]);
 
   // --- UI View States ---
-  const [activeTab, setActiveTab] = useState<TabType>('LIST');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    try {
+      const saved = sessionStorage.getItem('mttq_active_tab');
+      if (saved && ['LIST', 'MAP', 'SITES', 'FEEDBACK', 'STATS'].includes(saved)) {
+        return saved as TabType;
+      }
+    } catch { /* ignore */ }
+    return 'LIST';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('mttq_active_tab', activeTab);
+  }, [activeTab]);
+
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
 
   // --- Headquarters State (18 Trụ sở Khu phố + 5 Cơ quan Phường) ---

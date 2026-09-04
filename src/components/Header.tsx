@@ -28,10 +28,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           
           {/* National/Front Banner */}
-          <div className="flex items-center space-x-3.5 text-center md:text-left">
-            <div>
-              <h1 className="font-anton text-xl sm:text-2xl tracking-wide text-red-950 leading-tight">
-                HỆ THỐNG LIÊN LẠC BAN CÔNG TÁC MẶT TRẬN 18 KHU PHỐ <span className="whitespace-nowrap">PHƯỜNG BÌNH TIÊN</span>
+          <div className="flex items-center space-x-3.5 text-center md:text-left min-w-0 max-w-full">
+            <div className="min-w-0">
+              <h1 className="font-anton text-base sm:text-xl md:text-2xl tracking-wide text-red-950 leading-tight uppercase whitespace-nowrap">
+                MẶT TRẬN SỐ BÌNH TIÊN - MỘT CHẠM KẾT NỐI
               </h1>
               <p className="text-xs text-slate-600 mt-1 font-medium">
                 Lắng nghe & đồng hành cùng Nhân dân

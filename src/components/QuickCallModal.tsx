@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, MessageCircle, Copy, MapPin, X, Check, Shield, Award, Share2, AlertTriangle, User } from 'lucide-react';
 import { Personnel } from '../types';
-import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
+import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
 
 interface QuickCallModalProps {
   personnel: Personnel | null;
@@ -52,6 +52,7 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
   };
 
   const isBTT = isBanThuongTruc(personnel);
+  const isCV = isChuyenVien(personnel);
   const isLeader = isKeyLeader(personnel);
   const isDeputy = isDeputyLeader(personnel);
   const isParty = isPartyOfficial(personnel);
@@ -73,18 +74,20 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
             <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold border-2 ${
               isBTT
                 ? 'bg-gradient-to-br from-red-700 to-amber-600 border-amber-300 text-amber-200 shadow-lg'
+                : isCV
+                ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-blue-300 text-white shadow-lg'
                 : isLeader 
                 ? 'bg-amber-500 border-amber-300 text-red-950 shadow-lg' 
                 : isDeputy 
                 ? 'bg-gradient-to-br from-red-700 to-red-800 border-red-300 text-amber-300 shadow-md' 
                 : 'bg-red-900 border-amber-500/50 text-amber-200'
             }`}>
-              {isBTT ? '⭐' : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
+              {isBTT ? '⭐' : isCV ? '💼' : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
             </div>
 
             <div>
               <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider mb-1 bg-amber-400 text-red-950 border border-amber-300 shadow-2xs">
-                {isBTT ? 'Ban Thường trực Phường' : personnel.khuPho}
+                {isBTT ? 'Ban Thường trực Phường' : isCV ? 'Cơ quan Mặt trận' : personnel.khuPho}
               </span>
               <h3 className="text-lg font-black text-white leading-snug">
                 {personnel.hoTen}

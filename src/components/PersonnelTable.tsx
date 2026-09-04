@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, MapPin, Award, MessageCircle, Copy, Check, AlertTriangle } from 'lucide-react';
 import { Personnel } from '../types';
-import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink } from '../utils/helpers';
+import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink } from '../utils/helpers';
 
 interface PersonnelTableProps {
   personnelList: Personnel[];
@@ -50,6 +50,7 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
             ) : (
               personnelList.map((p) => {
                 const isBTT = isBanThuongTruc(p);
+                const isCV = isChuyenVien(p);
                 const isLeader = isKeyLeader(p);
                 const isDeputy = isDeputyLeader(p);
                 const isParty = isPartyOfficial(p);
@@ -70,6 +71,8 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                     className={`transition-colors ${
                       isBTT
                         ? 'bg-gradient-to-r from-red-50/80 via-amber-50/70 to-white hover:bg-amber-100 border-l-4 border-amber-500'
+                        : isCV
+                        ? 'bg-gradient-to-r from-blue-50/70 via-sky-50/40 to-white hover:bg-blue-100/70 border-l-4 border-blue-600'
                         : isLeader
                         ? 'bg-amber-50/80 hover:bg-amber-100/90 border-l-4 border-amber-500'
                         : isDeputy
@@ -89,6 +92,8 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                       <div className="font-black text-sm text-slate-900 flex items-center gap-1.5">
                         {isBTT ? (
                           <span className="text-amber-600">⭐</span>
+                        ) : isCV ? (
+                          <span className="text-blue-600">💼</span>
                         ) : isLeader ? (
                           <span className="text-amber-600">👑</span>
                         ) : isDeputy ? (
@@ -122,6 +127,8 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-bold tracking-tight ${
                           isBTT
                             ? 'bg-gradient-to-r from-red-800 to-amber-600 text-amber-200 border border-amber-400 shadow-2xs'
+                            : isCV
+                            ? 'bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs'
                             : isLeader
                             ? 'bg-amber-500 text-red-950 border border-amber-400 shadow-2xs'
                             : isDeputy
@@ -129,7 +136,7 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                             : 'bg-red-50 text-red-800 border border-red-200'
                         }`}
                       >
-                        {isBTT ? <span>⭐</span> : isLeader ? <span>👑</span> : isDeputy ? <span>🎖️</span> : null}
+                        {isBTT ? <span>⭐</span> : isCV ? <span>💼</span> : isLeader ? <span>👑</span> : isDeputy ? <span>🎖️</span> : null}
                         {String(p.chucDanhMatTran || '').toUpperCase() === 'TRƯỞNG BAN' 
                           ? 'Trưởng ban' 
                           : String(p.chucDanhMatTran || '').toUpperCase() === 'PHÓ TRƯỞNG BAN' 

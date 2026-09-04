@@ -11,7 +11,7 @@ import { RedSite } from '../types';
 import { getSupabase } from './supabaseClient';
 import { INITIAL_RED_SITES_DATA } from '../data/initialData';
 
-const LOCAL_STORAGE_KEY = 'mt_red_sites_data_v6';
+const LOCAL_STORAGE_KEY = 'mt_red_sites_data_v7';
 
 /**
  * Hàm tiện ích: Chuyển đổi link ảnh Google Drive (nếu người dùng dán link chia sẻ thông thường)
