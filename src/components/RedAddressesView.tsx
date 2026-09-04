@@ -6,7 +6,7 @@ import { RedAddressDetailModal } from './RedAddressDetailModal';
 
 // Helper to format image URL (supports Google Drive share links)
 export const formatImageUrl = (url?: string) => {
-  if (!url) return 'https://images.unsplash.com/photo-1599386032032-4951d69123a8?auto=format&fit=crop&q=80&w=1000';
+  if (!url) return '/pham-van-chi.pnj';
   if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (fileIdMatch && fileIdMatch[1]) {
@@ -58,8 +58,8 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
       address: newAddress.trim() || 'Phường Bình Tiên, TP.HCM',
       summary: newSummary.trim() || 'Địa chỉ đỏ lưu giữ truyền thống lịch sử văn hóa.',
       detailedHistory: newHistory.trim() || newSummary.trim(),
-      imageUrl: newImageUrl.trim() || 'https://images.unsplash.com/photo-1599386032032-4951d69123a8?auto=format&fit=crop&q=80&w=1000',
-      galleryImages: newImageUrl.trim() ? [newImageUrl.trim()] : ['https://images.unsplash.com/photo-1599386032032-4951d69123a8?auto=format&fit=crop&q=80&w=1000'],
+      imageUrl: newImageUrl.trim() || '/pham-van-chi.pnj',
+      galleryImages: newImageUrl.trim() ? [newImageUrl.trim()] : ['/pham-van-chi.pnj'],
       toaDo: {
         lat: parseFloat(newLat) || 10.74825,
         lng: parseFloat(newLng) || 106.63910,

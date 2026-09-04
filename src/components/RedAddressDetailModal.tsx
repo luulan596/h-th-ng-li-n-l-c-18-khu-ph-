@@ -15,7 +15,7 @@ const getGoogleMapsDirLink = (address: string) => {
 
 // Helper: Parse Google Drive URLs
 const formatImageUrl = (url?: string) => {
-  if (!url) return 'https://images.unsplash.com/photo-1599386032032-4951d69123a8?auto=format&fit=crop&q=80&w=1000';
+  if (!url) return '/pham-van-chi.pnj';
   if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (fileIdMatch && fileIdMatch[1]) {
@@ -179,7 +179,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                 <img
                   src={formatImageUrl(galleryList[activeImageIndex] || site.imageUrl)}
                   alt={`${site.name} ảnh ${activeImageIndex + 1}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
               </div>
