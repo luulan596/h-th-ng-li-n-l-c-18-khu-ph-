@@ -6,7 +6,7 @@ import { RedAddressDetailModal } from './RedAddressDetailModal';
 
 // Helper to format image URL (supports Google Drive share links)
 export const formatImageUrl = (url?: string) => {
-  if (!url) return '/pham-van-chi.pnj';
+  if (!url) return '/pham-van-chi (1).png';
   if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (fileIdMatch && fileIdMatch[1]) {
@@ -58,8 +58,8 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
       address: newAddress.trim() || 'Phường Bình Tiên, TP.HCM',
       summary: newSummary.trim() || 'Địa chỉ đỏ lưu giữ truyền thống lịch sử văn hóa.',
       detailedHistory: newHistory.trim() || newSummary.trim(),
-      imageUrl: newImageUrl.trim() || '/pham-van-chi.pnj',
-      galleryImages: newImageUrl.trim() ? [newImageUrl.trim()] : ['/pham-van-chi.pnj'],
+      imageUrl: newImageUrl.trim() || '/pham-van-chi (1).png',
+      galleryImages: newImageUrl.trim() ? [newImageUrl.trim()] : ['/pham-van-chi (1).png'],
       toaDo: {
         lat: parseFloat(newLat) || 10.74825,
         lng: parseFloat(newLng) || 106.63910,
@@ -153,6 +153,9 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
                   <img
                     src={formatImageUrl(site.imageUrl)}
                     alt={site.name}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
@@ -172,13 +175,14 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
                 <div className="p-4 flex-1 space-y-2">
                   <h4
                     onClick={() => handleOpenPopup(site, 'OVERVIEW')}
-                    className="text-base font-bold text-slate-900 hover:text-red-800 transition-colors line-clamp-2 cursor-pointer uppercase leading-snug"
+                    className="text-sm sm:text-base font-bold text-slate-900 hover:text-red-800 transition-colors truncate whitespace-nowrap cursor-pointer uppercase leading-snug"
+                    title={site.name}
                   >
                     {site.name}
                   </h4>
-                  <div className="flex items-start gap-1.5 text-xs text-slate-600 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-                    <span className="line-clamp-1">{site.address}</span>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium min-w-0">
+                    <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                    <span className="truncate whitespace-nowrap" title={site.address}>{site.address}</span>
                   </div>
                   <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed">
                     {site.summary}

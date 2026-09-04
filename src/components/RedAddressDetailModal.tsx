@@ -15,7 +15,7 @@ const getGoogleMapsDirLink = (address: string) => {
 
 // Helper: Parse Google Drive URLs
 const formatImageUrl = (url?: string) => {
-  if (!url) return '/pham-van-chi.pnj';
+  if (!url) return '/pham-van-chi (1).png';
   if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (fileIdMatch && fileIdMatch[1]) {
@@ -122,6 +122,9 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                 <img
                   src={formatImageUrl(site.imageUrl)}
                   alt={site.name}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -179,6 +182,9 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                 <img
                   src={formatImageUrl(galleryList[activeImageIndex] || site.imageUrl)}
                   alt={`${site.name} ảnh ${activeImageIndex + 1}`}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -197,7 +203,14 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                           : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={formatImageUrl(img)} alt="thumb" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <img
+                        src={formatImageUrl(img)}
+                        alt="thumb"
+                        loading="eager"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
                     </button>
                   ))}
                 </div>
