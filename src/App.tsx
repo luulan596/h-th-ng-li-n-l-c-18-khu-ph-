@@ -96,17 +96,36 @@ export default function App() {
 
   // --- Red Sites State ---
   const [redSitesList, setRedSitesList] = useState<RedSite[]>(() => {
-    const saved = localStorage.getItem('mt_red_sites_data_v8') || localStorage.getItem('mt_red_sites_data_v7') || localStorage.getItem('mt_red_sites_data_v6');
-    if (saved) {
-      try {
-        const parsed: RedSite[] = JSON.parse(saved);
-        const defaultMap = new Map(INITIAL_RED_SITES_DATA.map((s) => [s.id, s]));
-        const updated = parsed.map((item) => defaultMap.get(item.id) || item);
-        const existingIds = new Set(updated.map((p) => p.id));
-        const missingDefaults = INITIAL_RED_SITES_DATA.filter((item) => !existingIds.has(item.id));
-        return [...updated, ...missingDefaults];
-      } catch (e) { /* fallback */ }
-    }
+    try {
+      const version = localStorage.getItem('mt_red_asset_version');
+      if (version === 'v2026_final') {
+        const saved = localStorage.getItem('mt_red_sites_data_v8');
+        if (saved) {
+          const parsed: RedSite[] = JSON.parse(saved);
+          const defaultMap = new Map(INITIAL_RED_SITES_DATA.map((s) => [s.id, s]));
+          const updated = parsed.map((item) => {
+            const def = defaultMap.get(item.id);
+            if (def) {
+              return {
+                ...item,
+                image: def.image || def.imageUrl,
+                images: def.images || def.galleryImages,
+                imageUrl: def.imageUrl,
+                galleryImages: def.galleryImages
+              };
+            }
+            return item;
+          });
+          const existingIds = new Set(updated.map((p) => p.id));
+          const missingDefaults = INITIAL_RED_SITES_DATA.filter((item) => !existingIds.has(item.id));
+          return [...updated, ...missingDefaults];
+        }
+      } else {
+        localStorage.setItem('mt_red_asset_version', 'v2026_final');
+        localStorage.setItem('mt_red_sites_data_v8', JSON.stringify(INITIAL_RED_SITES_DATA));
+        return INITIAL_RED_SITES_DATA;
+      }
+    } catch (e) { /* fallback */ }
     return INITIAL_RED_SITES_DATA;
   });
 

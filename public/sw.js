@@ -99,20 +99,88 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title || data.tieu_de || 'Thông báo Mặt trận';
+  let bodyText = data.body || data.noi_dung || '';
+  if (data.dia_diem) {
+    bodyText += `\n📍 Địa điểm: ${data.dia_diem}`;
+  }
+  if (data.thoi_gian_gui) {
+    bodyText += `\n⏰ Thời gian: ${data.thoi_gian_gui}`;
+  }
+
   const options = {
-    body: data.body || data.noi_dung || '',
-    icon: '/pwa-192x192.png?v=2026',
-    badge: '/mat_tran_logo.svg',
-    vibrate: [200, 100, 200],
+    body: bodyText,
+    icon: '/icon.png',
+    badge: '/icon.png',
+    vibrate: [200, 100, 200, 100, 300],
+    tag: data.id ? String(data.id) : `notif-${Date.now()}`,
+    renotify: true,
+    requireInteraction: true,
     data: {
-      url: data.url || '/'
+      url: data.url || '/',
+      id: data.id,
+      notification: data
     }
   };
+
+  // Phát thông điệp đến tất cả tab ứng dụng đang mở để cập nhật chấm đỏ In-App Red Badge
+  self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    for (const client of clientList) {
+      client.postMessage({
+        type: 'PUSH_RECEIVED',
+        notification: {
+          id: data.id || `push-${Date.now()}`,
+          title: title,
+          body: bodyText,
+          tieu_de: title,
+          noi_dung: data.noi_dung || data.body || '',
+          dia_diem: data.dia_diem,
+          thoi_gian_gui: data.thoi_gian_gui,
+          created_at: new Date().toISOString()
+        }
+      });
+    }
+  });
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// 5. Xử lý sự kiện nhấp vào thông báo
+// 5. Lắng nghe thông điệp từ giao diện Web (gửi thông báo trực tiếp qua Service Worker)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    const finalOptions = {
+      body: options?.body || '',
+      icon: '/icon.png',
+      badge: '/icon.png',
+      vibrate: [200, 100, 200, 100, 300],
+      tag: options?.tag || `msg-${Date.now()}`,
+      renotify: true,
+      requireInteraction: true,
+      data: options?.data || { url: '/' }
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(title || 'Thông báo Mặt trận', finalOptions)
+    );
+
+    // Phát lại cho toàn bộ tab để đồng bộ chấm đỏ
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        client.postMessage({
+          type: 'PUSH_RECEIVED',
+          notification: options?.data?.notification || {
+            id: finalOptions.tag,
+            title: title,
+            body: finalOptions.body,
+            created_at: new Date().toISOString()
+          }
+        });
+      }
+    });
+  }
+});
+
+// 6. Xử lý sự kiện nhấp vào thông báo
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(

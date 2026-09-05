@@ -24,9 +24,11 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
 
   if (!site) return null;
 
-  const galleryList = site.galleryImages && site.galleryImages.length > 0 
-    ? site.galleryImages 
-    : [site.imageUrl];
+  const galleryList = (site.images && site.images.length > 0)
+    ? site.images
+    : (site.galleryImages && site.galleryImages.length > 0 
+        ? site.galleryImages 
+        : [site.image || site.imageUrl]);
 
   // Xác định nhãn tóm tắt phù hợp với di tích
   const summaryLabel = site.name.toLowerCase().includes('phạm văn chí')
@@ -109,12 +111,12 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
               {/* Banner Image */}
               <div className="rounded-2xl overflow-hidden h-52 sm:h-64 bg-slate-900 relative shadow-md">
                 <img
-                  src={formatImageUrl(site.imageUrl, site.name)}
+                  src={formatImageUrl(site.image || site.imageUrl, site.name)}
                   alt={site.name}
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
-                  onError={(e) => handleImageError(e, site.name || site.imageUrl)}
+                  onError={(e) => handleImageError(e, site.name || site.image || site.imageUrl)}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -170,12 +172,12 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
               {/* Large Display Photo */}
               <div className="rounded-2xl overflow-hidden h-64 sm:h-80 bg-slate-900 shadow-md relative group">
                 <img
-                  src={formatImageUrl(galleryList[activeImageIndex] || site.imageUrl, site.name)}
+                  src={formatImageUrl(galleryList[activeImageIndex] || site.image || site.imageUrl, site.name)}
                   alt={`${site.name} ảnh ${activeImageIndex + 1}`}
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
-                  onError={(e) => handleImageError(e, site.name || galleryList[activeImageIndex] || site.imageUrl)}
+                  onError={(e) => handleImageError(e, site.name || galleryList[activeImageIndex] || site.image || site.imageUrl)}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />

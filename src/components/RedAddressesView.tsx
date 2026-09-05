@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RedSite } from '../types';
 import { Landmark, MapPin, Navigation, Image as ImageIcon, RotateCcw, Plus, X } from 'lucide-react';
 import { getGoogleMapsDirLink } from '../utils/helpers';
 import { RedAddressDetailModal } from './RedAddressDetailModal';
+import { RED_ADDRESSES_DATA } from '../data/redAddressesData';
+
+export const RED_ASSET_VERSION = 'v2026_final';
+export const RED_ASSET_VERSION_KEY = 'mt_red_asset_version';
 
 // Helper to format image URL - eliminate external links and ensure standardized local paths
 export const formatImageUrl = (url?: string, siteIdentifier?: string) => {
   if (!url || url.includes('unsplash.com') || url.includes('drive.google.com') || url.includes('docs.google.com')) {
     const candidates = getFallbackImageCandidates(siteIdentifier || url);
-    return candidates[0] || '/pham-van-chi%20(1).png';
+    return candidates[0] || '/pham-van-chi.png';
   }
   // Standardize space to %20 if pointing to local public image with spaces
   if (url.startsWith('/') && url.includes(' ')) {
@@ -22,32 +26,28 @@ export const getFallbackImageCandidates = (siteOrUrl?: string): string[] => {
   const query = (siteOrUrl || '').toLowerCase();
   if (query.includes('pham-van-chi') || query.includes('phạm văn chí') || query.includes('bình hòa')) {
     return [
-      '/pham-van-chi%20(1).png',
-      '/pham-van-chi (1).png',
       '/pham-van-chi.png',
+      '/pham-van-chi%20(1).png',
       '/pham-van-chi.jpg',
     ];
   }
   if (query.includes('nguoi-hoa') || query.includes('người hoa') || query.includes('lưu vinh')) {
     return [
-      '/nha-truyen-thong-nguoi-hoa%20(1).png',
-      '/nha-truyen-thong-nguoi-hoa (1).png',
       '/nha-truyen-thong-nguoi-hoa.png',
+      '/nha-truyen-thong-nguoi-hoa%20(1).png',
       '/nha-truyen-thong-nguoi-hoa.jpg',
     ];
   }
   if (query.includes('hoa-van') || query.includes('hoa vận') || query.includes('gia phú') || query.includes('hầm in')) {
     return [
-      '/ham-in-hoa-van%20(1).png',
-      '/ham-in-hoa-van (1).png',
       '/ham-in-hoa-van.png',
+      '/ham-in-hoa-van%20(1).png',
       '/ham-in-hoa-van.jpg',
     ];
   }
   return [
-    '/pham-van-chi%20(1).png',
-    '/pham-van-chi (1).png',
     '/pham-van-chi.png',
+    '/pham-van-chi%20(1).png',
     '/pham-van-chi.jpg',
   ];
 };
@@ -88,6 +88,22 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
   onAddRedSite,
   onResetRedSites,
 }) => {
+  // Tự động kiểm tra cờ phiên bản dữ liệu RED_ASSET_VERSION = 'v2026_final'
+  useEffect(() => {
+    try {
+      const storedVersion = localStorage.getItem(RED_ASSET_VERSION_KEY);
+      if (storedVersion !== RED_ASSET_VERSION) {
+        localStorage.setItem(RED_ASSET_VERSION_KEY, RED_ASSET_VERSION);
+        localStorage.setItem('mt_red_sites_data_v8', JSON.stringify(RED_ADDRESSES_DATA));
+        if (onResetRedSites) {
+          onResetRedSites();
+        }
+      }
+    } catch (e) {
+      console.error('Error verifying RED_ASSET_VERSION:', e);
+    }
+  }, [onResetRedSites]);
+
   // Modal state for viewing details
   const [selectedSiteForPopup, setSelectedSiteForPopup] = useState<RedSite | null>(null);
   const [modalInitialTab, setModalInitialTab] = useState<'OVERVIEW' | 'GALLERY'>('OVERVIEW');
@@ -212,12 +228,12 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
                   onClick={() => handleOpenPopup(site, 'OVERVIEW')}
                 >
                   <img
-                    src={formatImageUrl(site.imageUrl, site.name)}
+                    src={formatImageUrl(site.image || site.imageUrl, site.name)}
                     alt={site.name}
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
-                    onError={(e) => handleImageError(e, site.name || site.imageUrl)}
+                    onError={(e) => handleImageError(e, site.name || site.image || site.imageUrl)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />

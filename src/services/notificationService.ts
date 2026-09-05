@@ -97,20 +97,29 @@ export async function registerPushSubscriber(): Promise<{ success: boolean; mess
     // Lưu vào LocalStorage cache
     localStorage.setItem(LOCAL_PUSH_SUBSCRIBER_KEY, JSON.stringify(payload));
 
-    // 3. Gửi lệnh insert/upsert vào bảng `push_subscribers` trên Supabase (kèm cơ chế tránh trùng lặp)
+    // 3. Gửi lệnh insert/upsert vào bảng `push_subscribers` & `push_subscriptions` trên Supabase (kèm cơ chế tránh trùng lặp)
     const supabase = getSupabase();
     if (supabase) {
-      try {
-        // Thử upsert theo cột endpoint (tránh trùng lặp nếu endpoint đã tồn tại)
-        const recordData = {
-          endpoint: payload.endpoint,
-          p256dh: payload.p256dh,
-          auth: payload.auth,
-          subscription: payload.subscription,
-          user_agent: payload.user_agent,
-          updated_at: payload.updated_at,
-        };
+      const recordData = {
+        endpoint: payload.endpoint,
+        p256dh: payload.p256dh,
+        auth: payload.auth,
+        subscription: payload.subscription,
+        user_agent: payload.user_agent,
+        updated_at: payload.updated_at,
+      };
 
+      // 3.1. Thử lưu vào push_subscriptions (chuẩn tên bảng Web Push)
+      try {
+        await supabase
+          .from('push_subscriptions')
+          .upsert(recordData, { onConflict: 'endpoint' });
+      } catch (subErr) {
+        console.warn('[PushService] Lưu push_subscriptions:', subErr);
+      }
+
+      // 3.2. Thử lưu vào push_subscribers (chuẩn phụ trợ)
+      try {
         const { error: upsertErr } = await supabase
           .from('push_subscribers')
           .upsert(recordData, { onConflict: 'endpoint' });
@@ -125,35 +134,14 @@ export async function registerPushSubscriber(): Promise<{ success: boolean; mess
             .limit(1);
 
           if (existingRows && existingRows.length > 0) {
-            // Bản ghi đã tồn tại -> cập nhật thời gian và subscription mới
             await supabase
               .from('push_subscribers')
-              .update({
-                p256dh: payload.p256dh,
-                auth: payload.auth,
-                subscription: payload.subscription,
-                user_agent: payload.user_agent,
-                updated_at: payload.updated_at,
-              })
+              .update(recordData)
               .eq('endpoint', payload.endpoint);
           } else {
-            // Chưa tồn tại -> chèn mới và bắt lỗi trùng lặp nếu có race condition (code 23505)
-            const { error: insertErr } = await supabase
+            await supabase
               .from('push_subscribers')
-              .insert([
-                {
-                  endpoint: payload.endpoint,
-                  p256dh: payload.p256dh,
-                  auth: payload.auth,
-                  subscription: payload.subscription,
-                  user_agent: payload.user_agent,
-                  created_at: payload.created_at,
-                },
-              ]);
-
-            if (insertErr && insertErr.code !== '23505') {
-              console.warn('[PushService] Insert push_subscribers error:', insertErr);
-            }
+              .insert([{ ...recordData, created_at: payload.created_at }]);
           }
         }
       } catch (dbErr) {
@@ -524,8 +512,227 @@ function saveScheduledToLocalCache(item: ScheduledNotification) {
 }
 
 /**
- * Tự động kích hoạt Push tức thì: Gọi một API request ngầm (Fetch) tới endpoint gửi push (/api/cron-push)
- * truyền kèm payload thông báo vừa cập nhật để hệ thống bắn Push ngay lập tức đến toàn bộ subscriber trong bảng push_subscribers.
+ * Giao diện thông báo trong ứng dụng (Lớp 2: In-App Notifications)
+ */
+export interface InAppNotificationItem {
+  id: string;
+  tieu_de: string;
+  noi_dung: string;
+  dia_diem?: string;
+  thoi_gian_gui?: string;
+  created_at: string;
+  read?: boolean;
+  type?: 'URGENT' | 'MEETING' | 'GENERAL';
+}
+
+export const LOCAL_INAPP_NOTIFS_KEY = 'mttq_inapp_notifications_v2026';
+export const LOCAL_READ_NOTIFS_KEY = 'mttq_read_notification_ids_v2026';
+
+// Dữ liệu thông báo khởi tạo mặc định nếu chưa có tin nhắn nào
+const INITIAL_INAPP_NOTIFICATIONS: InAppNotificationItem[] = [
+  {
+    id: 'notif-init-1',
+    tieu_de: 'Triệu tập Hội nghị Giao ban Ban Công tác Mặt trận 18 Khu phố',
+    noi_dung: 'Đề nghị các đồng chí Trưởng Ban CTMT 18 Khu phố tham dự đầy đủ, đúng giờ để đánh giá tiến độ phong trào Toàn dân đoàn kết xây dựng đời sống văn hóa và triển khai các nhiệm vụ trọng tâm.',
+    dia_diem: 'Hội trường Tầng 2, Trụ sở UBND Phường Bình Tiên',
+    thoi_gian_gui: new Date().toISOString(),
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    type: 'MEETING'
+  },
+  {
+    id: 'notif-init-2',
+    tieu_de: 'Thông báo khẩn: Tiếp xúc cử tri và Lắng nghe ý kiến Nhân dân',
+    noi_dung: 'Ban Thường trực UB.MTTQ VN Phường tổ chức buổi tiếp xúc trực tiếp cử tri lắng nghe phản ánh về vệ sinh môi trường, an sinh xã hội và trật tự đô thị tại địa bàn dân cư.',
+    dia_diem: 'Văn phòng Ban Điều hành Khu phố 3, Phường Bình Tiên',
+    thoi_gian_gui: new Date(Date.now() + 86400000).toISOString(),
+    created_at: new Date(Date.now() - 7200000).toISOString(),
+    type: 'URGENT'
+  }
+];
+
+/**
+ * Phát âm thanh chuông thông báo trong ứng dụng bằng Web Audio API
+ */
+export function playNotificationSound() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now); // A5
+    osc1.frequency.exponentialRampToValueAtTime(1318.5, now + 0.12); // E6
+
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1318.5, now + 0.12);
+    osc2.frequency.exponentialRampToValueAtTime(1760, now + 0.25); // A6
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.25);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.85);
+  } catch (e) {
+    console.warn('[Audio] Could not play notification chime:', e);
+  }
+}
+
+/**
+ * Lấy danh sách ID các thông báo đã đọc
+ */
+export function getReadNotificationIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const saved = localStorage.getItem(LOCAL_READ_NOTIFS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Lấy danh sách thông báo In-App đã được gán trạng thái read/unread
+ */
+export function getInAppNotifications(): InAppNotificationItem[] {
+  if (typeof window === 'undefined') return INITIAL_INAPP_NOTIFICATIONS;
+  try {
+    const saved = localStorage.getItem(LOCAL_INAPP_NOTIFS_KEY);
+    let list: InAppNotificationItem[] = saved ? JSON.parse(saved) : [];
+    
+    // Nếu chưa có, nạp danh sách ban đầu
+    if (list.length === 0) {
+      list = [...INITIAL_INAPP_NOTIFICATIONS];
+      localStorage.setItem(LOCAL_INAPP_NOTIFS_KEY, JSON.stringify(list));
+    }
+
+    const readIds = getReadNotificationIds();
+    return list.map(item => ({
+      ...item,
+      read: readIds.includes(String(item.id))
+    }));
+  } catch (e) {
+    return INITIAL_INAPP_NOTIFICATIONS;
+  }
+}
+
+/**
+ * Lưu 1 thông báo mới vào bộ nhớ In-App và phát sự kiện đồng bộ
+ */
+export function saveInAppNotification(notif: Omit<InAppNotificationItem, 'read'>): InAppNotificationItem {
+  const item: InAppNotificationItem = {
+    ...notif,
+    id: notif.id ? String(notif.id) : `inapp-${Date.now()}`,
+    created_at: notif.created_at || new Date().toISOString(),
+    read: false
+  };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem(LOCAL_INAPP_NOTIFS_KEY);
+      const list: InAppNotificationItem[] = saved ? JSON.parse(saved) : [];
+      
+      const existingIdx = list.findIndex(x => String(x.id) === String(item.id));
+      if (existingIdx >= 0) {
+        list[existingIdx] = { ...list[existingIdx], ...item };
+      } else {
+        list.unshift(item);
+      }
+      localStorage.setItem(LOCAL_INAPP_NOTIFS_KEY, JSON.stringify(list));
+
+      // Bỏ id này khỏi danh sách đã đọc nếu có
+      const readIds = getReadNotificationIds().filter(id => id !== String(item.id));
+      localStorage.setItem(LOCAL_READ_NOTIFS_KEY, JSON.stringify(readIds));
+
+      // Phát sự kiện trong tab hiện tại
+      window.dispatchEvent(new CustomEvent('mttq_new_notification', { detail: item }));
+
+      // Phát sự kiện qua BroadcastChannel đến các tab khác
+      if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('mttq_notifications');
+        channel.postMessage({ type: 'NEW_NOTIFICATION', notification: item });
+        channel.close();
+      }
+    } catch (e) {
+      console.warn('[InAppNotification] Lỗi khi lưu thông báo:', e);
+    }
+  }
+
+  return item;
+}
+
+/**
+ * Đánh dấu một thông báo là ĐÃ ĐỌC
+ */
+export function markNotificationAsRead(id: string | number) {
+  if (typeof window === 'undefined') return;
+  try {
+    const safeId = String(id);
+    const readIds = getReadNotificationIds();
+    if (!readIds.includes(safeId)) {
+      readIds.push(safeId);
+      localStorage.setItem(LOCAL_READ_NOTIFS_KEY, JSON.stringify(readIds));
+    }
+    window.dispatchEvent(new CustomEvent('mttq_notification_read_changed', { detail: { id: safeId } }));
+    if ('BroadcastChannel' in window) {
+      const channel = new BroadcastChannel('mttq_notifications');
+      channel.postMessage({ type: 'READ_CHANGED', id: safeId });
+      channel.close();
+    }
+  } catch (e) {
+    console.warn('[InAppNotification] Lỗi markNotificationAsRead:', e);
+  }
+}
+
+/**
+ * Đánh dấu TẤT CẢ thông báo là ĐÃ ĐỌC (xóa ngay Red Badge)
+ */
+export function markAllNotificationsAsRead() {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getInAppNotifications();
+    const allIds = list.map(item => String(item.id));
+    localStorage.setItem(LOCAL_READ_NOTIFS_KEY, JSON.stringify(allIds));
+    
+    window.dispatchEvent(new CustomEvent('mttq_notification_read_changed', { detail: { all: true } }));
+    if ('BroadcastChannel' in window) {
+      const channel = new BroadcastChannel('mttq_notifications');
+      channel.postMessage({ type: 'ALL_READ' });
+      channel.close();
+    }
+  } catch (e) {
+    console.warn('[InAppNotification] Lỗi markAllNotificationsAsRead:', e);
+  }
+}
+
+/**
+ * Lấy số lượng thông báo chưa đọc
+ */
+export function getUnreadNotificationCount(): number {
+  const list = getInAppNotifications();
+  const readIds = getReadNotificationIds();
+  return list.filter(item => !readIds.includes(String(item.id))).length;
+}
+
+/**
+ * Tự động kích hoạt Push tức thì:
+ * 1. Gọi Edge Function / Web Push API gửi đến toàn bộ thuê bao trong Supabase (push_subscriptions)
+ * 2. Bật Notification ngoài màn hình khóa (vibrate, sound, /icon.png)
+ * 3. Lưu vào danh sách thông báo In-App để hiển thị Red Badge (Lớp 2)
  */
 export async function triggerImmediatePushNotification(payload: {
   id?: string | number;
@@ -535,56 +742,131 @@ export async function triggerImmediatePushNotification(payload: {
   dia_diem?: string;
 }): Promise<{ success: boolean; message: string }> {
   try {
-    const bodyData = {
-      id: payload.id,
-      tieu_de: payload.tieu_de.trim(),
-      noi_dung: payload.noi_dung.trim(),
-      dia_diem: payload.dia_diem?.trim() || '',
-      thoi_gian_gui: payload.thoi_gian_gui || new Date().toISOString(),
-    };
+    const notifId = payload.id ? String(payload.id) : `push-${Date.now()}`;
+    const formattedTitle = payload.tieu_de.trim();
+    const formattedBody = payload.noi_dung.trim();
+    const formattedLocation = payload.dia_diem?.trim() || 'Hội trường UBND Phường';
+    const formattedTime = payload.thoi_gian_gui || new Date().toISOString();
 
-    // Gọi request ngầm với timeout an toàn
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    // 1. Lưu ngay vào hệ thống In-App Notification (LỚP 2: Red Badge lập tức bật sáng)
+    saveInAppNotification({
+      id: notifId,
+      tieu_de: formattedTitle,
+      noi_dung: formattedBody,
+      dia_diem: formattedLocation,
+      thoi_gian_gui: formattedTime,
+      type: 'URGENT',
+      created_at: new Date().toISOString()
+    });
 
-    try {
-      const response = await fetch('/api/cron-push', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bodyData),
-        signal: controller.signal,
-      });
+    // 2. Kích hoạt âm thanh chuông
+    playNotificationSound();
 
-      clearTimeout(timeoutId);
+    // 3. Chuẩn bị nội dung hiển thị popup ngoài màn hình
+    const detailedBodyText = `${formattedBody}\n📍 Địa điểm: ${formattedLocation}\n⏰ Thời gian: ${formattedTime}`;
 
-      if (response.ok) {
-        return {
-          success: true,
-          message: 'Đã gửi yêu cầu phát thông báo Push tức thì thành công!',
-        };
+    // 4. Kích hoạt thông báo ngoài màn hình khóa qua Service Worker (kèm Rung, Chuông, Logo /icon.png)
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        if (registration && 'showNotification' in registration) {
+          await registration.showNotification(formattedTitle, {
+            body: detailedBodyText,
+            icon: '/icon.png',
+            badge: '/icon.png',
+            vibrate: [200, 100, 200, 100, 300],
+            tag: notifId,
+            renotify: true,
+            requireInteraction: true,
+            data: {
+              url: '/',
+              id: notifId
+            }
+          });
+        }
+      } catch (swErr) {
+        console.warn('[PushService] Không thể hiển thị qua ServiceWorker showNotification:', swErr);
       }
-    } catch (fetchErr) {
-      clearTimeout(timeoutId);
-      console.warn('[PushService] Không thể fetch /api/cron-push, tiếp tục an toàn:', fetchErr);
+
+      // Gửi message cho SW để phát tán cho các clients
+      try {
+        navigator.serviceWorker.controller?.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          title: formattedTitle,
+          options: {
+            body: detailedBodyText,
+            tag: notifId,
+            data: { url: '/' }
+          }
+        });
+      } catch (msgErr) {
+        // bỏ qua
+      }
     }
 
-    // Nếu người dùng hiện tại đã bật quyền Notification trên máy, hiển thị notification cục bộ
+    // 5. Nếu ServiceWorker chưa hỗ trợ nhưng Notification.permission granted, dùng Notification API trực tiếp
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification(payload.tieu_de, {
-          body: payload.dia_diem ? `${payload.noi_dung}\n(Địa điểm: ${payload.dia_diem})` : payload.noi_dung,
-          icon: '/pwa-192x192.png',
+        new Notification(formattedTitle, {
+          body: detailedBodyText,
+          icon: '/icon.png',
         });
       } catch (e) {
         // bỏ qua
       }
     }
 
+    // 6. GỌI API PHÁT TIN (Edge Function / Web Push Server) tới toàn bộ thiết bị đã đăng ký trong Supabase
+    const bodyData = {
+      id: notifId,
+      tieu_de: formattedTitle,
+      noi_dung: formattedBody,
+      dia_diem: formattedLocation,
+      thoi_gian_gui: formattedTime,
+    };
+
+    // Gọi lần lượt các endpoint hỗ trợ Web Push
+    const pushEndpoints = ['/api/send-push', '/api/cron-push'];
+    let sentToBackend = false;
+
+    for (const endpoint of pushEndpoints) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          sentToBackend = true;
+          break;
+        }
+      } catch (e) {
+        // thử endpoint tiếp theo
+      }
+    }
+
+    // 7. Thử gọi Supabase Edge Function nếu Supabase client có functions
+    const supabase = getSupabase();
+    if (supabase && (supabase as any).functions) {
+      try {
+        await (supabase as any).functions.invoke('send-push', {
+          body: bodyData
+        });
+        sentToBackend = true;
+      } catch (edgeErr) {
+        console.warn('[PushService] Edge function send-push:', edgeErr);
+      }
+    }
+
     return {
       success: true,
-      message: 'Đã xử lý kích hoạt phát thông báo!',
+      message: sentToBackend 
+        ? 'Đã phát thông báo Push tức thì đến toàn bộ thiết bị đăng ký và bật chuông đỏ trong ứng dụng!'
+        : 'Đã kích hoạt phát thông báo ngay lập tức trên thiết bị và đồng bộ chuông đỏ trong ứng dụng!'
     };
   } catch (err: any) {
     console.warn('[PushService] Ngoại lệ khi triggerImmediatePushNotification:', err);

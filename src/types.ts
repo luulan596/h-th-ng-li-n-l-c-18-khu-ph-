@@ -51,6 +51,8 @@ export interface RedSite {
   detailedHistory: string;
   imageUrl: string;
   galleryImages: string[];
+  image?: string;
+  images?: string[];
   videoUrl?: string;
   driveUrl?: string; // Google Drive link (video, photo folder, document storage)
   toaDo: {
