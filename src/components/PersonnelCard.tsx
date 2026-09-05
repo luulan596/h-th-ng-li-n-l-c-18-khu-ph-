@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MapPin, Award, Shield, Copy, Check, MessageCircle, AlertTriangle, Calendar, User } from 'lucide-react';
+import { Phone, MapPin, Award, Shield, Copy, Check, MessageCircle, AlertTriangle, Calendar, User, BadgeCheck } from 'lucide-react';
 import { Personnel } from '../types';
 import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink, getCombinedRole } from '../utils/helpers';
 
@@ -49,7 +49,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   const cardBorderClass = isBTT
     ? 'border-l-4 border-amber-500 bg-gradient-to-r from-red-50 via-amber-50/70 to-white ring-1 ring-amber-400/50 shadow-xs'
     : isCV
-    ? 'border-l-4 border-blue-600 bg-gradient-to-r from-blue-50/70 via-white to-sky-50/30 shadow-xs border-blue-200'
+    ? 'border-l-4 border-indigo-400 bg-gradient-to-r from-indigo-50/60 via-white to-slate-50/40 shadow-xs border-indigo-200'
     : isLeader
     ? 'border-l-4 border-amber-500 bg-gradient-to-r from-amber-50/80 via-white to-red-50/30 shadow-xs border-amber-200/80'
     : isDeputy
@@ -61,7 +61,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   const avatarBgClass = isBTT
     ? 'bg-gradient-to-br from-red-700 to-amber-600 text-amber-200 border border-amber-300 shadow-xs'
     : isCV
-    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white border border-blue-300 shadow-xs'
+    ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-2xs'
     : isLeader
     ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-red-950 border border-amber-400 shadow-xs'
     : isDeputy
@@ -77,7 +77,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
   const roleTextClass = isBTT
     ? 'text-[11.5px] font-bold text-red-950 tracking-tight'
     : isCV
-    ? 'text-[11px] font-bold text-blue-900 tracking-tight'
+    ? 'text-[11px] font-bold text-indigo-900 tracking-tight'
     : isLeader
     ? 'text-[11px] font-bold text-amber-900 tracking-tight'
     : isDeputy
@@ -97,7 +97,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
           <div className="flex items-start gap-2.5 min-w-0">
             {/* Avatar Circle */}
             <div className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full font-bold text-xs shadow-2xs ${avatarBgClass}`}>
-              {isBTT ? '⭐' : isCV ? '💼' : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
+              {isBTT ? '⭐' : isCV ? <BadgeCheck className="w-4 h-4 text-indigo-600" /> : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
             </div>
 
             <div className="min-w-0 flex-1">
@@ -119,7 +119,8 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
               {/* Badges Row: Khu phố, Chức vụ kiêm nhiệm, Cấp ủy, Thông tin cá nhân */}
               <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
                 {isCV ? (
-                  <span className="text-[9.5px] font-black px-2 py-0.5 bg-blue-900 text-sky-200 rounded-md border border-blue-400 uppercase tracking-wider shadow-2xs">
+                  <span className="text-[9.5px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-200 uppercase tracking-wider shadow-2xs flex items-center gap-1">
+                    <BadgeCheck className="w-3 h-3 text-indigo-600 shrink-0" />
                     Cơ quan Mặt trận
                   </span>
                 ) : (

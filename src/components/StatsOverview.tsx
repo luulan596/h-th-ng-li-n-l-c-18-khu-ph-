@@ -1,7 +1,7 @@
 import React from 'react';
 import { Personnel } from '../types';
 import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial } from '../utils/helpers';
-import { Users, Award, Shield, UserCheck, Star, Briefcase } from 'lucide-react';
+import { Users, Award, Shield, UserCheck, Star, BadgeCheck } from 'lucide-react';
 
 export type QuickFilterType = 'BTT' | 'CHUYEN_VIEN' | 'TRUONG_BAN' | 'PHO_BAN' | 'CAP_UY' | 'ALL';
 
@@ -76,16 +76,16 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
         onClick={() => onSelectQuickFilter('CHUYEN_VIEN')}
         className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-all cursor-pointer select-none ${
           currentFilterType === 'CHUYEN_VIEN'
-            ? 'bg-blue-800 text-white border-blue-900 shadow-sm ring-1 ring-blue-600'
-            : 'bg-white hover:bg-blue-50/60 text-slate-800 border-slate-200 border-l-3 border-l-blue-600'
+            ? 'bg-indigo-700 text-white border-indigo-800 shadow-sm ring-1 ring-indigo-500'
+            : 'bg-white hover:bg-indigo-50/70 text-slate-800 border-indigo-200 border-l-3 border-l-indigo-600'
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
-          <Briefcase className={`w-3.5 h-3.5 shrink-0 ${currentFilterType === 'CHUYEN_VIEN' ? 'text-amber-300' : 'text-blue-600'}`} />
-          <span className="font-bold tracking-tight truncate text-[11px] uppercase">Chuyên viên</span>
+          <BadgeCheck className={`w-3.5 h-3.5 shrink-0 ${currentFilterType === 'CHUYEN_VIEN' ? 'text-indigo-200' : 'text-indigo-600'}`} />
+          <span className={`font-bold tracking-tight truncate text-[11px] uppercase ${currentFilterType === 'CHUYEN_VIEN' ? 'text-white' : 'text-indigo-950'}`}>Chuyên viên</span>
         </div>
         <span className={`text-xs font-black px-1.5 py-0.5 rounded ml-1 shrink-0 ${
-          currentFilterType === 'CHUYEN_VIEN' ? 'bg-amber-400 text-slate-950' : 'bg-blue-100 text-blue-900'
+          currentFilterType === 'CHUYEN_VIEN' ? 'bg-white text-indigo-900' : 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200/60'
         }`}>
           {chuyenVienCount}
         </span>
@@ -133,7 +133,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
         </span>
       </div>
 
-      {/* Cấp ủy Chi bộ */}
+      {/* Đại diện Cấp ủy Chi bộ */}
       <div
         id="btn-filter-cap-uy"
         onClick={() => onSelectQuickFilter('CAP_UY')}
@@ -145,7 +145,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <Shield className={`w-3.5 h-3.5 shrink-0 ${currentFilterType === 'CAP_UY' ? 'text-amber-300' : 'text-red-600'}`} />
-          <span className="font-bold tracking-tight truncate text-[11px] uppercase">Cấp ủy</span>
+          <span className="font-bold tracking-tight truncate text-[11px] uppercase">Đại diện Cấp ủy</span>
         </div>
         <span className={`text-xs font-black px-1.5 py-0.5 rounded ml-1 shrink-0 ${
           currentFilterType === 'CAP_UY' ? 'bg-amber-400 text-red-950' : 'bg-red-100 text-red-800'

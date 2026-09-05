@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MapPin, Award, MessageCircle, Copy, Check, AlertTriangle } from 'lucide-react';
+import { Phone, MapPin, Award, MessageCircle, Copy, Check, AlertTriangle, BadgeCheck } from 'lucide-react';
 import { Personnel } from '../types';
 import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink } from '../utils/helpers';
 
@@ -128,7 +128,7 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                           isBTT
                             ? 'bg-gradient-to-r from-red-800 to-amber-600 text-amber-200 border border-amber-400 shadow-2xs'
                             : isCV
-                            ? 'bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs'
+                            ? 'bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs'
                             : isLeader
                             ? 'bg-amber-500 text-red-950 border border-amber-400 shadow-2xs'
                             : isDeputy
@@ -136,7 +136,7 @@ export const PersonnelTable: React.FC<PersonnelTableProps> = ({
                             : 'bg-red-50 text-red-800 border border-red-200'
                         }`}
                       >
-                        {isBTT ? <span>⭐</span> : isCV ? <span>💼</span> : isLeader ? <span>👑</span> : isDeputy ? <span>🎖️</span> : null}
+                        {isBTT ? <span>⭐</span> : isCV ? <BadgeCheck className="w-3.5 h-3.5 text-indigo-600 inline shrink-0" /> : isLeader ? <span>👑</span> : isDeputy ? <span>🎖️</span> : null}
                         {String(p.chucDanhMatTran || '').toUpperCase() === 'TRƯỞNG BAN' 
                           ? 'Trưởng ban' 
                           : String(p.chucDanhMatTran || '').toUpperCase() === 'PHÓ TRƯỞNG BAN' 

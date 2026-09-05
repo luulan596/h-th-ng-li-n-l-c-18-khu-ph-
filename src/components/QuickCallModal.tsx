@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MessageCircle, Copy, MapPin, X, Check, Shield, Award, Share2, AlertTriangle, User } from 'lucide-react';
+import { Phone, MessageCircle, Copy, MapPin, X, Check, Shield, Award, Share2, AlertTriangle, User, BadgeCheck } from 'lucide-react';
 import { Personnel } from '../types';
 import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink, getCombinedRole } from '../utils/helpers';
 
@@ -75,14 +75,14 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
               isBTT
                 ? 'bg-gradient-to-br from-red-700 to-amber-600 border-amber-300 text-amber-200 shadow-lg'
                 : isCV
-                ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-blue-300 text-white shadow-lg'
+                ? 'bg-indigo-100 border-indigo-300 text-indigo-700 shadow-md'
                 : isLeader 
                 ? 'bg-amber-500 border-amber-300 text-red-950 shadow-lg' 
                 : isDeputy 
                 ? 'bg-gradient-to-br from-red-700 to-red-800 border-red-300 text-amber-300 shadow-md' 
                 : 'bg-red-900 border-amber-500/50 text-amber-200'
             }`}>
-              {isBTT ? '⭐' : isCV ? '💼' : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
+              {isBTT ? '⭐' : isCV ? <BadgeCheck className="w-6 h-6 text-indigo-600" /> : isLeader ? '👑' : isDeputy ? '🎖️' : isParty ? '🏛️' : '👤'}
             </div>
 
             <div>
