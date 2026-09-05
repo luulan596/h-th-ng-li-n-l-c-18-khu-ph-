@@ -80,10 +80,12 @@ export default async function handler(req, res) {
 
     // 2. Lấy danh sách thiết bị đã đăng ký từ bảng push_subscribers
     let subscribers = [];
-    if (supabase) {
+    if (body && Array.isArray(body.subscribers) && body.subscribers.length > 0) {
+      subscribers = body.subscribers;
+    } else if (supabase) {
       const { data, error: subError } = await supabase
         .from('push_subscribers')
-        .select('subscription');
+        .select('*');
 
       if (!subError && data) {
         subscribers = data;
@@ -109,10 +111,15 @@ export default async function handler(req, res) {
 
         const sendPromises = subscribers.map(async (sub) => {
           try {
-            if (!sub.subscription) return;
-            const subData = typeof sub.subscription === 'string'
-              ? JSON.parse(sub.subscription)
-              : sub.subscription;
+            if (!sub) return;
+            let subData = sub.subscription || sub;
+            if (typeof subData === 'string') {
+              try {
+                subData = JSON.parse(subData);
+              } catch {
+                // fallback
+              }
+            }
 
             if (subData && subData.endpoint) {
               await webpush.sendNotification(subData, payload);
@@ -126,12 +133,16 @@ export default async function handler(req, res) {
 
         await Promise.allSettled(sendPromises);
 
-        // 4. Nếu là thông báo trong DB (không phải immediate ad-hoc), cập nhật trạng thái đã gửi
-        if (supabase && notif.id && !notif.isImmediate) {
-          await supabase
-            .from('scheduled_notifications')
-            .update({ trang_thai: 'sent' })
-            .eq('id', notif.id);
+        // 4. Cập nhật trạng thái trong bảng scheduled_notifications từ pending sang sent
+        if (supabase && notif.id) {
+          try {
+            await supabase
+              .from('scheduled_notifications')
+              .update({ trang_thai: 'sent' })
+              .eq('id', notif.id);
+          } catch (updateDbErr) {
+            console.warn('Lỗi cập nhật trang_thai sent:', updateDbErr?.message);
+          }
         }
       }
     }

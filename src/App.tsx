@@ -193,6 +193,15 @@ export default function App() {
     }
   };
 
+  // Auto-sync Push Subscription if permission is already granted
+  useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      registerPushSubscriber().catch(err => {
+        console.warn('[Push] Auto-sync subscription error:', err);
+      });
+    }
+  }, []);
+
   const handleEnableNotification = async () => {
     playTingSound();
     try {
@@ -200,22 +209,10 @@ export default function App() {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
           setIsNotificationGranted(true);
-          // 1. Đăng ký nhận thông báo chuẩn xác với VAPID_PUBLIC_KEY
+          // Lưu đối tượng subscription vào bảng push_subscribers trên Supabase (chuẩn hóa endpoint và json)
           try {
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-              const registration = await navigator.serviceWorker.ready;
-              try {
-                const subscription = await registration.pushManager.subscribe({
-                  userVisibleOnly: true,
-                  applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
-                console.log('[Push] Subscription đăng ký thành công:', subscription);
-              } catch (subErr) {
-                console.warn('[Push] pushManager.subscribe:', subErr);
-              }
-            }
-            // 2. Lưu đối tượng subscription vào bảng push_subscribers trên Supabase (tránh trùng lặp)
-            await registerPushSubscriber();
+            const res = await registerPushSubscriber();
+            console.log('[Push] registerPushSubscriber hoàn tất:', res);
           } catch (regErr) {
             console.warn('[Push] Lỗi khi lưu mã thiết bị push_subscribers:', regErr);
           }

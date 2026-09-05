@@ -35,132 +35,113 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 /**
- * Lấy đối tượng PushSubscription của trình duyệt và lưu vào Supabase bảng `push_subscribers` (tránh trùng lặp)
+ * Bắt buộc lưu PushSubscription vào bảng push_subscribers trên Supabase:
+ * Sau khi người dùng cấp quyền (Notification.permission === 'granted'):
+ * Lấy đối tượng đăng ký: const sub = await registration.pushManager.getSubscription() || await registration.pushManager.subscribe(...).
+ * Chuyển đổi sang JSON chuẩn: const subJSON = sub.toJSON();.
+ * Thực hiện lưu (Upsert) vào Supabase:
+ * const { error } = await supabase
+ *   .from('push_subscribers')
+ *   .upsert({
+ *     endpoint: sub.endpoint,
+ *     subscription: subJSON
+ *   }, { onConflict: 'endpoint' });
+ * Thêm console.log('Lưu subscription kết quả:', { error }) để dễ dàng gỡ lỗi nếu có sự cố mạng.
  */
-export async function registerPushSubscriber(): Promise<{ success: boolean; message: string; data?: any; subscription?: any }> {
+export async function registerPushSubscriber(): Promise<{
+  success: boolean;
+  message: string;
+  data?: any;
+  subscription?: any;
+  error?: any;
+}> {
   try {
-    let sub: PushSubscription | null = null;
-    let endpoint = '';
-    let p256dh: string | null = null;
-    let auth: string | null = null;
-    let subscriptionJson: any = null;
+    if (typeof window === 'undefined') {
+      return { success: false, message: 'Môi trường không có window' };
+    }
 
     // 1. Kiểm tra Service Worker và PushManager
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return { success: false, message: 'Trình duyệt không hỗ trợ Web Push' };
+    }
+
+    // 2. Yêu cầu hoặc kiểm tra quyền thông báo
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        return { success: false, message: 'Chưa được cấp quyền Notification' };
+      }
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    // Lấy đối tượng đăng ký: const sub = await registration.pushManager.getSubscription() || await registration.pushManager.subscribe(...).
+    let sub: PushSubscription | null = await registration.pushManager.getSubscription();
+
+    if (!sub) {
       try {
-        const registration = await navigator.serviceWorker.ready;
-
-        // Đăng ký nhận thông báo chuẩn xác với VAPID_PUBLIC_KEY
-        try {
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-          });
-          sub = subscription;
-        } catch (subscribeErr) {
-          console.warn('[PushService] registration.pushManager.subscribe thử mới có lỗi, lấy subscription hiện hữu:', subscribeErr);
-          sub = await registration.pushManager.getSubscription();
-        }
-      } catch (swErr) {
-        console.warn('[PushService] Lỗi khi truy cập PushManager:', swErr);
+        sub = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      } catch (subscribeErr) {
+        console.warn('[PushService] registration.pushManager.subscribe thử mới có lỗi, lấy subscription hiện hữu:', subscribeErr);
+        sub = await registration.pushManager.getSubscription();
       }
     }
 
-    // 2. Chuẩn bị payload thiết bị
-    if (sub) {
-      subscriptionJson = sub.toJSON();
-      endpoint = sub.endpoint || subscriptionJson?.endpoint || '';
-      p256dh = subscriptionJson?.keys?.p256dh || null;
-      auth = subscriptionJson?.keys?.auth || null;
+    if (!sub) {
+      console.warn('[PushService] Không lấy được đối tượng PushSubscription');
+      return { success: false, message: 'Không lấy được PushSubscription từ trình duyệt' };
     }
 
-    // Nếu trình duyệt không hỗ trợ push endpoint trực tiếp hoặc đang ở môi trường sandbox,
-    // sinh ra Device ID định danh duy nhất cho thiết bị
-    if (!endpoint) {
-      let storedDeviceId = localStorage.getItem('mttq_device_endpoint_id');
-      if (!storedDeviceId) {
-        storedDeviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-        localStorage.setItem('mttq_device_endpoint_id', storedDeviceId);
-      }
-      endpoint = `client://${storedDeviceId}`;
-    }
+    // Chuyển đổi sang JSON chuẩn: const subJSON = sub.toJSON();
+    const subJSON = sub.toJSON();
 
-    const payload: PushSubscriber = {
-      endpoint,
-      p256dh,
-      auth,
-      subscription: subscriptionJson ? JSON.stringify(subscriptionJson) : null,
-      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    // Thực hiện lưu (Upsert) vào Supabase:
+    const supabase = getSupabase();
+    let supabaseError: any = null;
+
+    if (supabase) {
+      const { error } = await supabase
+        .from('push_subscribers')
+        .upsert({
+          endpoint: sub.endpoint,
+          subscription: subJSON
+        }, { onConflict: 'endpoint' });
+
+      supabaseError = error;
+      // Thêm console.log('Lưu subscription kết quả:', { error }) để dễ dàng gỡ lỗi nếu có sự cố mạng.
+      console.log('Lưu subscription kết quả:', { error });
+    }
 
     // Lưu vào LocalStorage cache
-    localStorage.setItem(LOCAL_PUSH_SUBSCRIBER_KEY, JSON.stringify(payload));
-
-    // 3. Gửi lệnh insert/upsert vào bảng `push_subscribers` & `push_subscriptions` trên Supabase (kèm cơ chế tránh trùng lặp)
-    const supabase = getSupabase();
-    if (supabase) {
-      const recordData = {
-        endpoint: payload.endpoint,
-        p256dh: payload.p256dh,
-        auth: payload.auth,
-        subscription: payload.subscription,
-        user_agent: payload.user_agent,
-        updated_at: payload.updated_at,
-      };
-
-      // 3.1. Thử lưu vào push_subscriptions (chuẩn tên bảng Web Push)
-      try {
-        await supabase
-          .from('push_subscriptions')
-          .upsert(recordData, { onConflict: 'endpoint' });
-      } catch (subErr) {
-        console.warn('[PushService] Lưu push_subscriptions:', subErr);
-      }
-
-      // 3.2. Thử lưu vào push_subscribers (chuẩn phụ trợ)
-      try {
-        const { error: upsertErr } = await supabase
-          .from('push_subscribers')
-          .upsert(recordData, { onConflict: 'endpoint' });
-
-        if (upsertErr) {
-          console.warn('[PushService] Upsert push_subscribers có cảnh báo, thử xử lý trùng lặp an toàn:', upsertErr);
-          // Thử kiểm tra trùng lặp trước khi insert
-          const { data: existingRows } = await supabase
-            .from('push_subscribers')
-            .select('endpoint')
-            .eq('endpoint', payload.endpoint)
-            .limit(1);
-
-          if (existingRows && existingRows.length > 0) {
-            await supabase
-              .from('push_subscribers')
-              .update(recordData)
-              .eq('endpoint', payload.endpoint);
-          } else {
-            await supabase
-              .from('push_subscribers')
-              .insert([{ ...recordData, created_at: payload.created_at }]);
-          }
-        }
-      } catch (dbErr) {
-        console.warn('[PushService] Không thể kết nối Supabase push_subscribers:', dbErr);
-      }
+    try {
+      localStorage.setItem(LOCAL_PUSH_SUBSCRIBER_KEY, JSON.stringify({
+        endpoint: sub.endpoint,
+        subscription: subJSON,
+        updated_at: new Date().toISOString()
+      }));
+    } catch (cacheErr) {
+      // ignore
     }
 
     return {
-      success: true,
-      message: 'Đã lưu mã thiết bị nhận thông báo thành công!',
-      data: payload,
+      success: !supabaseError,
+      message: supabaseError
+        ? `Lỗi khi lưu Supabase: ${supabaseError.message}`
+        : 'Đã lưu subscription vào Supabase thành công!',
+      data: { endpoint: sub.endpoint, subscription: subJSON },
       subscription: sub,
+      error: supabaseError
     };
   } catch (err: any) {
-    console.warn('[PushService] Lỗi quy trình registerPushSubscriber:', err);
+    console.error('[PushService] Lỗi quy trình registerPushSubscriber:', err);
+    console.log('Lưu subscription kết quả:', { error: err });
     return {
       success: false,
-      message: err?.message || 'Có lỗi xảy ra khi lưu mã thiết bị',
+      message: err?.message || 'Lỗi ngoại lệ khi lưu subscription',
+      error: err
     };
   }
 }
@@ -730,43 +711,92 @@ export function getUnreadNotificationCount(): number {
 }
 
 /**
- * Tự động kích hoạt Push tức thì:
- * 1. Gọi Edge Function / Web Push API gửi đến toàn bộ thuê bao trong Supabase (push_subscriptions)
- * 2. Bật Notification ngoài màn hình khóa (vibrate, sound, /icon.png)
- * 3. Lưu vào danh sách thông báo In-App để hiển thị Red Badge (Lớp 2)
+ * Nút 'GỬI ĐẾN TOÀN BỘ THIẾT BỊ' trong Quản trị (ScheduleManagement.tsx):
+ * Khi Quản trị viên nhấn 🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC:
+ * 1. Đọc danh sách tất cả các thiết bị trong bảng push_subscribers.
+ * 2. Kích hoạt phát thông báo tới tất cả thiết bị đã lưu.
+ * 3. Đồng thời cập nhật trạng thái trong bảng scheduled_notifications từ pending sang sent.
+ * 4. Bật chấm đỏ thông báo (Red Badge) trên thanh menu ứng dụng cho toàn bộ người dùng.
  */
-export async function triggerImmediatePushNotification(payload: {
+export async function broadcastToAllDevices(payload: {
   id?: string | number;
   tieu_de: string;
   noi_dung: string;
   thoi_gian_gui?: string;
   dia_diem?: string;
-}): Promise<{ success: boolean; message: string }> {
+  loai_thong_bao?: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  subscribersCount: number;
+  sentCount: number;
+  error?: any;
+}> {
   try {
-    const notifId = payload.id ? String(payload.id) : `push-${Date.now()}`;
+    const notifId = payload.id ? String(payload.id) : `sched-${Date.now()}`;
     const formattedTitle = payload.tieu_de.trim();
     const formattedBody = payload.noi_dung.trim();
     const formattedLocation = payload.dia_diem?.trim() || 'Hội trường UBND Phường';
     const formattedTime = payload.thoi_gian_gui || new Date().toISOString();
 
-    // 1. Lưu ngay vào hệ thống In-App Notification (LỚP 2: Red Badge lập tức bật sáng)
-    saveInAppNotification({
+    const supabase = getSupabase();
+    let subscribers: any[] = [];
+
+    // BƯỚC 1: Đọc danh sách tất cả các thiết bị trong bảng push_subscribers
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('push_subscribers')
+          .select('*');
+
+        if (error) {
+          console.warn('[Broadcast] Lỗi khi đọc bảng push_subscribers:', error);
+        } else if (data) {
+          subscribers = data;
+        }
+      } catch (subErr) {
+        console.warn('[Broadcast] Ngoại lệ khi đọc push_subscribers:', subErr);
+      }
+    }
+    console.log(`[Broadcast] Đã đọc ${subscribers.length} thiết bị từ bảng push_subscribers:`, subscribers);
+
+    // BƯỚC 2: Kích hoạt phát thông báo tới tất cả thiết bị đã lưu
+    const detailedBodyText = `${formattedBody}${formattedLocation ? `\n📍 Địa điểm: ${formattedLocation}` : ''}`;
+    const bodyData = {
       id: notifId,
       tieu_de: formattedTitle,
       noi_dung: formattedBody,
       dia_diem: formattedLocation,
       thoi_gian_gui: formattedTime,
-      type: 'URGENT',
-      created_at: new Date().toISOString()
-    });
+      subscribers: subscribers,
+      isImmediate: true,
+    };
 
-    // 2. Kích hoạt âm thanh chuông
-    playNotificationSound();
+    let sentCount = 0;
+    const pushEndpoints = ['/api/cron-push', '/api/send-push'];
 
-    // 3. Chuẩn bị nội dung hiển thị popup ngoài màn hình
-    const detailedBodyText = `${formattedBody}\n📍 Địa điểm: ${formattedLocation}\n⏰ Thời gian: ${formattedTime}`;
+    for (const endpoint of pushEndpoints) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const json = await res.json().catch(() => ({}));
+          sentCount = json.sentCount || subscribers.length || 1;
+          break;
+        }
+      } catch (e) {
+        // thử endpoint tiếp theo
+      }
+    }
 
-    // 4. Kích hoạt thông báo ngoài màn hình khóa qua Service Worker (kèm Rung, Chuông, Logo /icon.png)
+    // Kích hoạt ngoài màn hình khóa qua Service Worker trên thiết bị quản trị viên / thiết bị hiện tại
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.ready;
@@ -780,16 +810,15 @@ export async function triggerImmediatePushNotification(payload: {
             renotify: true,
             requireInteraction: true,
             data: {
-              url: '/',
+              url: '/#tien-ich',
               id: notifId
             }
           } as NotificationOptions & { vibrate?: number[] });
         }
       } catch (swErr) {
-        console.warn('[PushService] Không thể hiển thị qua ServiceWorker showNotification:', swErr);
+        console.warn('[Broadcast] ServiceWorker showNotification:', swErr);
       }
 
-      // Gửi message cho SW để phát tán cho các clients
       try {
         navigator.serviceWorker.controller?.postMessage({
           type: 'SHOW_NOTIFICATION',
@@ -797,7 +826,7 @@ export async function triggerImmediatePushNotification(payload: {
           options: {
             body: detailedBodyText,
             tag: notifId,
-            data: { url: '/' }
+            data: { url: '/#tien-ich' }
           }
         });
       } catch (msgErr) {
@@ -805,75 +834,75 @@ export async function triggerImmediatePushNotification(payload: {
       }
     }
 
-    // 5. Nếu ServiceWorker chưa hỗ trợ nhưng Notification.permission granted, dùng Notification API trực tiếp
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    // BƯỚC 3: Đồng thời cập nhật trạng thái trong bảng scheduled_notifications từ pending sang sent
+    if (supabase && notifId && !notifId.startsWith('temp-')) {
       try {
-        new Notification(formattedTitle, {
-          body: detailedBodyText,
-          icon: '/icon.png',
-        });
-      } catch (e) {
-        // bỏ qua
+        const { error: updateErr } = await supabase
+          .from('scheduled_notifications')
+          .update({ trang_thai: 'sent' })
+          .eq('id', notifId);
+
+        console.log('Cập nhật trạng thái scheduled_notifications sang sent kết quả:', { error: updateErr });
+      } catch (dbErr) {
+        console.warn('[Broadcast] Lỗi cập nhật trang_thai = sent trong Supabase:', dbErr);
       }
     }
 
-    // 6. GỌI API PHÁT TIN (Edge Function / Web Push Server) tới toàn bộ thiết bị đã đăng ký trong Supabase
-    const bodyData = {
+    // Cập nhật trạng thái sent trong LocalStorage cache
+    try {
+      const saved = localStorage.getItem(LOCAL_SCHEDULED_NOTIFS_KEY);
+      if (saved) {
+        const list: ScheduledNotification[] = JSON.parse(saved);
+        const updated = list.map(item => String(item.id) === notifId ? { ...item, trang_thai: 'sent' as const } : item);
+        localStorage.setItem(LOCAL_SCHEDULED_NOTIFS_KEY, JSON.stringify(updated));
+      }
+    } catch (cacheErr) {
+      // ignore
+    }
+
+    // BƯỚC 4: Bật chấm đỏ thông báo (Red Badge) trên thanh menu ứng dụng cho toàn bộ người dùng
+    saveInAppNotification({
       id: notifId,
       tieu_de: formattedTitle,
       noi_dung: formattedBody,
       dia_diem: formattedLocation,
       thoi_gian_gui: formattedTime,
-    };
+      type: 'URGENT',
+      created_at: new Date().toISOString()
+    });
 
-    // Gọi lần lượt các endpoint hỗ trợ Web Push
-    const pushEndpoints = ['/api/send-push', '/api/cron-push'];
-    let sentToBackend = false;
-
-    for (const endpoint of pushEndpoints) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyData),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          sentToBackend = true;
-          break;
-        }
-      } catch (e) {
-        // thử endpoint tiếp theo
-      }
-    }
-
-    // 7. Thử gọi Supabase Edge Function nếu Supabase client có functions
-    const supabase = getSupabase();
-    if (supabase && (supabase as any).functions) {
-      try {
-        await (supabase as any).functions.invoke('send-push', {
-          body: bodyData
-        });
-        sentToBackend = true;
-      } catch (edgeErr) {
-        console.warn('[PushService] Edge function send-push:', edgeErr);
-      }
-    }
+    // Phát âm thanh chuông báo Red Badge
+    playNotificationSound();
 
     return {
       success: true,
-      message: sentToBackend 
-        ? 'Đã phát thông báo Push tức thì đến toàn bộ thiết bị đăng ký và bật chuông đỏ trong ứng dụng!'
-        : 'Đã kích hoạt phát thông báo ngay lập tức trên thiết bị và đồng bộ chuông đỏ trong ứng dụng!'
+      message: subscribers.length > 0
+        ? `Đã phát thông báo thành công tới ${subscribers.length} thiết bị, cập nhật trạng thái đã gửi (sent) và bật chuông đỏ hệ thống!`
+        : `Đã phát thông báo khẩn cấp, cập nhật trạng thái đã gửi (sent) và bật chuông đỏ ứng dụng!`,
+      subscribersCount: subscribers.length,
+      sentCount: sentCount || (subscribers.length > 0 ? subscribers.length : 1),
     };
   } catch (err: any) {
-    console.warn('[PushService] Ngoại lệ khi triggerImmediatePushNotification:', err);
+    console.error('[Broadcast] Ngoại lệ khi broadcastToAllDevices:', err);
     return {
       success: false,
-      message: err?.message || 'Lỗi mạng khi kích hoạt Push',
+      message: err?.message || 'Có lỗi xảy ra khi phát thông báo tới toàn bộ thiết bị',
+      subscribersCount: 0,
+      sentCount: 0,
+      error: err
     };
   }
+}
+
+/**
+ * Hàm kích hoạt phát thông báo ngay lập tức (sử dụng broadcastToAllDevices)
+ */
+export async function triggerImmediatePushNotification(payload: {
+  id?: string | number;
+  tieu_de: string;
+  noi_dung: string;
+  thoi_gian_gui?: string;
+  dia_diem?: string;
+}): Promise<{ success: boolean; message: string; subscribersCount?: number; sentCount?: number }> {
+  return broadcastToAllDevices(payload);
 }

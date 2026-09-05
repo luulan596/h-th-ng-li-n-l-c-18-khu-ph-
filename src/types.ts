@@ -127,6 +127,7 @@ export interface ScheduledNotification {
   thoi_gian_gui: string;
   dia_diem?: string;
   trang_thai: 'pending' | 'sent' | 'cancelled' | string;
+  loai_thong_bao?: string;
   created_at?: string;
   nguoi_tao?: string;
 }

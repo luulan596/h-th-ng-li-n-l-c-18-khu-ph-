@@ -24,7 +24,8 @@ import {
   fetchScheduledNotifications,
   saveScheduledNotification,
   deleteScheduledNotification,
-  triggerImmediatePushNotification
+  triggerImmediatePushNotification,
+  broadcastToAllDevices
 } from '../services/notificationService';
 
 interface ScheduleManagementProps {
@@ -214,14 +215,14 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     }
   };
 
-  // 2. IMMEDIATE PUSH BROADCAST (🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC)
+  // 2. IMMEDIATE PUSH BROADCAST (🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC / GỬI ĐẾN TOÀN BỘ THIẾT BỊ)
   const handleTriggerImmediatePush = async () => {
     if (!notifTitle.trim()) {
       toast('Vui lòng nhập Tiêu đề thông báo trước khi phát!');
       return;
     }
 
-    if (!window.confirm('Xác nhận: PHÁT THÔNG BÁO NGAY LẬP TỨC đến toàn bộ các thiết bị đăng ký và hiển thị chuông đỏ trong ứng dụng?')) {
+    if (!window.confirm('Xác nhận: PHÁT THÔNG BÁO NGAY LẬP TỨC đến toàn bộ các thiết bị đăng ký trong bảng push_subscribers và hiển thị chuông đỏ (Red Badge)?')) {
       return;
     }
 
@@ -232,7 +233,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
       const content = notifContent.trim() || 'Kính mời các đồng chí tham dự cuộc họp công tác theo lịch.';
       const location = notifLocation.trim() || 'Hội trường UBND Phường';
 
-      // Bước 1: Lưu vào cơ sở dữ liệu Supabase
+      // Bước 1: Lưu vào cơ sở dữ liệu Supabase bảng scheduled_notifications
       const itemToSave = {
         id: editingNotifId || undefined,
         tieu_de: title,
@@ -241,23 +242,53 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
         noi_dung: content,
         loai_thong_bao: 'KHẨN'
       };
-      await saveScheduledNotification(itemToSave);
+      const saveRes = await saveScheduledNotification(itemToSave);
+      const recordId = saveRes.data?.id || editingNotifId || undefined;
 
-      // Bước 2: Kích hoạt Web Push API + Service Worker + In-App Red Badge (2 lớp)
-      const pushResult = await triggerImmediatePushNotification({
-        id: editingNotifId || undefined,
+      // Bước 2: Kích hoạt broadcastToAllDevices
+      // (Đọc danh sách push_subscribers, gửi Push, cập nhật scheduled_notifications từ pending sang sent, bật Red Badge)
+      const pushResult = await broadcastToAllDevices({
+        id: recordId,
         tieu_de: title,
         noi_dung: content,
         dia_diem: location,
-        thoi_gian_gui: scheduledDateTime
+        thoi_gian_gui: scheduledDateTime,
+        loai_thong_bao: 'KHẨN'
       });
 
       toast(`🚀 ${pushResult.message}`);
       handleResetForm();
-      loadNotifications();
+      await loadNotifications();
       if (onRefreshInAppNotifications) onRefreshInAppNotifications();
     } catch (err: any) {
       toast(`Lỗi khi phát thông báo: ${err?.message || 'Vui lòng kiểm tra lại kết nối'}`);
+    } finally {
+      setIsSendingImmediate(false);
+    }
+  };
+
+  // 3. GỬI ĐẾN TOÀN BỘ THIẾT BỊ TỪ DANH SÁCH LỊCH ĐÃ CÓ
+  const handleSendToAllDevices = async (item: ScheduledNotification) => {
+    if (!window.confirm(`Xác nhận: GỬI ĐẾN TOÀN BỘ THIẾT BỊ thông báo "${item.tieu_de}"? Hệ thống sẽ quét toàn bộ bảng push_subscribers, gửi thông báo đẩy và bật chuông đỏ ứng dụng.`)) {
+      return;
+    }
+
+    setIsSendingImmediate(true);
+    try {
+      const pushResult = await broadcastToAllDevices({
+        id: item.id,
+        tieu_de: item.tieu_de,
+        noi_dung: item.noi_dung || '',
+        dia_diem: item.dia_diem || '',
+        thoi_gian_gui: item.thoi_gian_gui,
+        loai_thong_bao: item.loai_thong_bao || 'LỊCH HỌP'
+      });
+
+      toast(`🚀 ${pushResult.message}`);
+      await loadNotifications();
+      if (onRefreshInAppNotifications) onRefreshInAppNotifications();
+    } catch (err: any) {
+      toast(`Lỗi khi gửi thông báo: ${err?.message || 'Vui lòng thử lại'}`);
     } finally {
       setIsSendingImmediate(false);
     }
@@ -498,17 +529,17 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
               {/* 5. NÚT HÀNH ĐỘNG 2 NÚT NỔI BẬT: 🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC + LƯU LỊCH GỬI */}
               <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
-                {/* NÚT 1: 🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC (NỔI BẬT CÔNG TÁC KHẨN) */}
+                {/* NÚT 1: 🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC (GỬI ĐẾN TOÀN BỘ THIẾT BỊ) */}
                 <button
                   type="button"
                   id="btn-broadcast-immediate-push"
                   disabled={isSendingImmediate || isSavingSchedule}
                   onClick={handleTriggerImmediatePush}
                   className="px-5 py-2.5 bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-xl text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-50 ring-2 ring-red-300"
-                  title="Gửi ngay Web Push Notification đến toàn bộ điện thoại và máy tính đăng ký"
+                  title="Đọc danh sách bảng push_subscribers, gửi thông báo tới tất cả thiết bị, cập nhật scheduled_notifications sang sent và bật Red Badge"
                 >
                   <span className="text-base leading-none">🚀</span>
-                  <span>{isSendingImmediate ? 'ĐANG PHÁT THÔNG BÁO...' : 'PHÁT THÔNG BÁO NGAY LẬP TỨC'}</span>
+                  <span>{isSendingImmediate ? 'ĐANG PHÁT THÔNG BÁO...' : '🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC (GỬI ĐẾN TOÀN BỘ THIẾT BỊ)'}</span>
                 </button>
 
                 {/* NÚT 2: LƯU LỊCH GỬI / CẬP NHẬT THÔNG BÁO */}
@@ -556,6 +587,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                 {scheduledNotifs.map((item) => {
                   const safeId = String(item.id);
                   const isEditingThis = editingNotifId === safeId;
+                  const isSent = item.trang_thai === 'sent';
 
                   return (
                     <div
@@ -566,17 +598,34 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                           : 'bg-slate-50/70 hover:bg-white border-slate-200'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-start justify-between gap-2 mb-1.5 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-100 text-blue-800">
                             {item.loai_thong_bao || 'Lịch Họp'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                            isSent
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                              : 'bg-amber-100 text-amber-800 border border-amber-200'
+                          }`}>
+                            {isSent ? '✓ Đã gửi (Sent)' : '⏱ Chờ gửi (Pending)'}
                           </span>
                           <span className="text-[11px] font-bold text-slate-900">
                             {item.tieu_de}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleSendToAllDevices(item)}
+                            disabled={isSendingImmediate}
+                            className="px-2.5 py-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-lg text-[10px] font-black tracking-wide flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                            title="Quét bảng push_subscribers, gửi thông báo tới tất cả thiết bị, cập nhật scheduled_notifications sang sent và bật Red Badge"
+                          >
+                            <span>🚀</span>
+                            <span>GỬI ĐẾN TOÀN BỘ THIẾT BỊ</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleStartEdit(item)}
