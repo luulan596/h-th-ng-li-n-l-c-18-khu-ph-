@@ -15,6 +15,7 @@ import { ExcelImportModal } from './components/ExcelImportModal';
 import { DemocraticMailboxView } from './components/DemocraticMailboxView';
 import { OverviewView } from './components/OverviewView';
 import { UtilitiesView } from './components/UtilitiesView';
+import { AdminAuthGuardModal, checkIsAdmin } from './components/AdminAuthGuardModal';
 import {
   fetchAllPersonnel,
   fetchAllHeadquarters,
@@ -151,6 +152,21 @@ export default function App() {
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
+
+  const handleAddPersonnelClick = () => {
+    if (checkIsAdmin()) {
+      setEditingPersonnel(null);
+      setIsFormModalOpen(true);
+    } else {
+      setIsAdminAuthModalOpen(true);
+    }
+  };
+
+  const handleAdminAuthSuccess = () => {
+    setEditingPersonnel(null);
+    setIsFormModalOpen(true);
+  };
 
   // --- Notification System States & Mechanism ---
   const [isNotificationGranted, setIsNotificationGranted] = useState<boolean>(() => {
@@ -657,11 +673,8 @@ export default function App() {
           <div className="flex flex-wrap items-center justify-end gap-2 mb-3.5">
             {/* Add Personnel Button */}
             <button
-              onClick={() => {
-                setEditingPersonnel(null);
-                setIsFormModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-all active:scale-95"
+              onClick={handleAddPersonnelClick}
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>THÊM CÁN BỘ</span>
@@ -942,6 +955,15 @@ export default function App() {
         onSave={handleSavePersonnel}
         editingPersonnel={editingPersonnel}
         availableKhuPhoList={availableKhuPhoList}
+      />
+
+      {/* Popup Xác thực Quản trị viên cho Thêm Cán Bộ */}
+      <AdminAuthGuardModal
+        isOpen={isAdminAuthModalOpen}
+        onClose={() => setIsAdminAuthModalOpen(false)}
+        onSuccess={handleAdminAuthSuccess}
+        actionType="ADD_PERSONNEL"
+        title="Khu vực dành riêng cho Quản trị viên"
       />
 
       {/* Mobile Bottom Navigation Bar */}

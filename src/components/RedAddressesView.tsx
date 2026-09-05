@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { RedSite } from '../types';
-import { Landmark, MapPin, Navigation, Image as ImageIcon, RotateCcw, Plus, X } from 'lucide-react';
+import { Landmark, MapPin, Navigation, Image as ImageIcon, RotateCcw, Plus, X, CheckCircle2 } from 'lucide-react';
 import { getGoogleMapsDirLink } from '../utils/helpers';
 import { RedAddressDetailModal } from './RedAddressDetailModal';
 import { RED_ADDRESSES_DATA } from '../data/redAddressesData';
+import { AdminAuthGuardModal, checkIsAdmin } from './AdminAuthGuardModal';
 
-export const RED_ASSET_VERSION = 'v2026_final';
+export const RED_ASSET_VERSION = 'v2026_history_quotes';
 export const RED_ASSET_VERSION_KEY = 'mt_red_asset_version';
 
 // Helper to format image URL - eliminate external links and ensure standardized local paths
@@ -109,6 +110,60 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
   const [modalInitialTab, setModalInitialTab] = useState<'OVERVIEW' | 'GALLERY'>('OVERVIEW');
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Admin Auth Guard states
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
+  const [adminAuthAction, setAdminAuthAction] = useState<'ADD_RED_SITE' | 'RESET_RED_SITES'>('ADD_RED_SITE');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
+
+  const handleAddSiteClick = () => {
+    if (checkIsAdmin()) {
+      setShowAddModal(true);
+    } else {
+      setAdminAuthAction('ADD_RED_SITE');
+      setIsAdminAuthModalOpen(true);
+    }
+  };
+
+  const handleResetSitesClick = () => {
+    if (checkIsAdmin()) {
+      if (onResetRedSites) {
+        try {
+          localStorage.setItem('mt_red_sites_data_v8', JSON.stringify(RED_ADDRESSES_DATA));
+        } catch (e) {
+          console.error(e);
+        }
+        onResetRedSites();
+        showToast('Đã khôi phục thành công danh sách Địa chỉ đỏ lịch sử!');
+      }
+    } else {
+      setAdminAuthAction('RESET_RED_SITES');
+      setIsAdminAuthModalOpen(true);
+    }
+  };
+
+  const handleAdminAuthSuccess = () => {
+    if (adminAuthAction === 'ADD_RED_SITE') {
+      setShowAddModal(true);
+    } else if (adminAuthAction === 'RESET_RED_SITES') {
+      if (onResetRedSites) {
+        try {
+          localStorage.setItem('mt_red_sites_data_v8', JSON.stringify(RED_ADDRESSES_DATA));
+        } catch (e) {
+          console.error(e);
+        }
+        onResetRedSites();
+        showToast('Đã khôi phục thành công danh sách Địa chỉ đỏ lịch sử!');
+      }
+    }
+  };
+
   // Form states for new red site
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState('Di tích Lịch sử');
@@ -185,21 +240,23 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {onResetRedSites && (
               <button
-                onClick={onResetRedSites}
-                className="p-2 sm:px-3 sm:py-1.5 bg-red-950/80 hover:bg-red-900 text-amber-200 font-bold text-xs uppercase tracking-wider rounded-xl border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 cursor-pointer"
+                type="button"
+                onClick={handleResetSitesClick}
+                className="px-3 py-2 bg-red-950/80 hover:bg-red-900 text-amber-200 font-bold text-xs uppercase tracking-wider rounded-xl border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 cursor-pointer shadow-xs"
                 title="Khôi phục Di tích Mặc định"
               >
-                <RotateCcw className="w-4 h-4 text-amber-300" />
-                <span className="hidden sm:inline">Khôi phục</span>
+                <RotateCcw className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                <span className="whitespace-nowrap">KHÔI PHỤC</span>
               </button>
             )}
             {onAddRedSite && (
               <button
-                onClick={() => setShowAddModal(true)}
+                type="button"
+                onClick={handleAddSiteClick}
                 className="flex-1 sm:flex-none px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-red-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
               >
                 <Plus className="w-4 h-4 shrink-0" />
-                <span>Thêm Địa Chỉ Đỏ</span>
+                <span className="whitespace-nowrap">THÊM ĐỊA CHỈ ĐỎ</span>
               </button>
             )}
           </div>
@@ -437,6 +494,23 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* POPUP XÁC THỰC QUẢN TRỊ VIÊN CHO THÊM ĐỊA CHỈ ĐỎ / KHÔI PHỤC */}
+      <AdminAuthGuardModal
+        isOpen={isAdminAuthModalOpen}
+        onClose={() => setIsAdminAuthModalOpen(false)}
+        onSuccess={handleAdminAuthSuccess}
+        actionType={adminAuthAction}
+        title={adminAuthAction === 'ADD_RED_SITE' ? 'Xác thực Thêm Địa Chỉ Đỏ' : 'Xác thực Khôi Phục Di Tích'}
+      />
+
+      {/* TOAST THÔNG BÁO HOÀN TẤT HÀNH ĐỘNG */}
+      {toastMessage && (
+        <div className="fixed bottom-20 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-amber-200 px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 border border-amber-400/40 text-xs sm:text-sm font-semibold animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
 

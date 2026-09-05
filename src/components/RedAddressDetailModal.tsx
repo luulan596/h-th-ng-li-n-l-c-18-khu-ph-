@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Landmark, MapPin, Navigation, Image as ImageIcon, X, Clock, Ticket, ExternalLink, Sparkles } from 'lucide-react';
+import { Landmark, MapPin, Navigation, Image as ImageIcon, X, Clock, Ticket, ExternalLink, Sparkles, BookOpen, Quote } from 'lucide-react';
 import { RedSite } from '../types';
 import { formatImageUrl, handleImageError } from './RedAddressesView';
 
@@ -12,6 +12,60 @@ interface RedAddressDetailModalProps {
 // Helper: Convert Google Maps address to navigation link
 const getGoogleMapsDirLink = (address: string) => {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+};
+
+interface HistoricalExcerptProfile {
+  name: string;
+  exactAddress: string;
+  categoryBadge: string;
+  quotes: string[];
+}
+
+// Trích nội dung lịch sử chuẩn xác cho từng di tích lịch sử
+const getHistoricalExcerptProfile = (site: RedSite): HistoricalExcerptProfile | null => {
+  const query = (site.name + ' ' + (site.address || '') + ' ' + site.id).toLowerCase();
+
+  // 1. Mộ và Đền thờ ông Phạm Văn Chí (Đình Bình Hòa)
+  if (query.includes('phạm văn chí') || query.includes('bình hòa') || query.includes('red-site-1')) {
+    return {
+      name: 'Mộ và Đền thờ ông Phạm Văn Chí (Đình Bình Hòa)',
+      exactAddress: 'Số 703 đường Phạm Văn Chí',
+      categoryBadge: 'Di tích Lịch sử Cấp Thành phố (QĐ số 4301/QĐ-UBND)',
+      quotes: [
+        'Ông Phạm Văn Chí sinh trưởng tại làng Bình Đông (Chợ Lớn), xuất thân là một hương chức làng. Khi giặc Pháp xâm chiếm miền Đông Nam Việt, tuy chức phận nhỏ nhưng chí khí cao, ý thức được nhiệm vụ của công dân đối với quốc gia nên ông đã gia nhập phong trào chống xâm lăng của Trương Công Định và lãnh nhiệm vụ hoạt động trong vùng Chợ Lớn với nhiều chiến công oanh liệt. Ngày 10/10/2008, UBND thành phố Hồ Chí Minh ban hành Quyết định số 4301/QĐ-UBND về xếp hạng di tích lịch sử cấp thành phố đối với Mộ và Đền thờ ông Phạm Văn Chí.',
+        'Di tích lịch sử Mộ và Đền thờ ông Phạm Văn Chí là nơi để nhân dân ghi nhớ, thờ phụng, tôn vinh công đức của tiền nhân; là nơi để nhân dân tham quan, tìm hiểu, nghiên cứu các giá trị về lịch sử, truyền thống đấu tranh chống ngoại xâm và truyền thống đấu tranh cách mạng của dân tộc.',
+      ],
+    };
+  }
+
+  // 2. Nhà truyền thống cách mạng người Hoa
+  if (query.includes('người hoa') || query.includes('nguoi hoa') || query.includes('lưu vinh') || query.includes('red-site-2')) {
+    return {
+      name: 'Nhà truyền thống cách mạng người Hoa',
+      exactAddress: 'Số 91 đường Phạm Văn Chí',
+      categoryBadge: 'Di tích Lịch sử Cấp Thành phố (QĐ số 4377/QĐ-UBND)',
+      quotes: [
+        'Với truyền thống yêu nước, truyền thống cách mạng, đồng bào người Việt cũng như người Hoa ở Quận 6, đã một lòng một dạ theo Đảng và trong suốt hai cuộc kháng chiến chống thực dân Pháp và đế quốc Mỹ, Quận 6 luôn là niềm tin, chỗ dựa vững chắc của Thành phố, nhiều vị lãnh đạo Trung ương, Thành ủy đã từng có thời gian hoạt động, chỉ đạo phong trào đấu tranh cách mạng tại địa bàn Quận 6 trong sự bảo vệ, đùm bọc, che chở của nhiều cơ sở cách mạng người Việt và người Hoa, trong đó có gia đình chú Lưu Vinh (Lưu Vinh Phong) - một gia đình người Hoa yêu nước quận 6.',
+        'Có thể nói, căn nhà 91 Đường Phạm Văn Chí rất xứng đáng là một trong những địa chỉ đỏ của Quận 6 trong thời kỳ kháng chiến chống Mỹ cứu nước cũng như trong sự nghiệp xây dựng và bảo vệ Tổ quốc Việt Nam xã hội chủ nghĩa. Do giá trị lịch sử cũng như việc phát huy được giá trị trong công tác giáo dục truyền thống của căn nhà 91 Đường Phạm Văn Chí sau khi trở thành Nhà truyền thống người Hoa thành phố, nên ngày 15/10/2008, Ủy ban nhân dân thành phố Hồ Chí Minh đã ban hành Quyết định số 4377/QĐ-UBND công nhận căn nhà số 91 Phạm Văn Chí là Di tích lịch sử cấp Thành phố.',
+      ],
+    };
+  }
+
+  // 3. Hầm in bí mật của Ban Tuyên huấn Hoa vận
+  if (query.includes('hoa vận') || query.includes('hoa van') || query.includes('gia phú') || query.includes('hầm in') || query.includes('red-site-3')) {
+    return {
+      name: 'Hầm in bí mật của Ban Tuyên huấn Hoa vận',
+      exactAddress: 'Số 341/10 Gia Phú, phường 1 - quận 6',
+      categoryBadge: 'Di tích Lịch sử Cấp Quốc gia (QĐ số 2009/1998/QĐ-BVHTT)',
+      quotes: [
+        'Năm 1961, bộ phận Tuyên huấn của Ban cán sự Công vận người Hoa đã tổ chức một sở bí mật in truyền đơn bằng chữ Hoa ngay trong nội thành nhằm góp phần phổ biến kịp thời những tin tức thời sự nóng bỏng của quân và dân trên chiến trường, các chủ trương, chính sách của Mặt trận, cổ vũ, động viên phong trào đấu tranh của các tầng lớp nhân dân trong thành phố.',
+        'Ngày 26/09/1998, Bộ Văn hóa Thông tin nay là Bộ Văn hóa, Thể dục, Thể thao đã ban hành Quyết định số 2009/1998/QĐ-BVHTT công nhận Di tích lịch sử Hầm bí mật in tài liệu của Ban Tuyên huấn Hoa vận trong thời kỳ chống Mỹ cứu nước tại số 341/10 đường Gia Phú, phường 1- quận 6.',
+        'Địa chỉ này là nơi để nhân dân tham quan, tìm hiểu, nghiên cứu các giá trị về lịch sử, các hiện vật và truyền thống đấu tranh chống Mỹ của đồng bào Hoa quận 6, thành phố Hồ Chí Minh nói riêng và của dân tộc Việt Nam nói chung nhằm giáo dục truyền thống đấu tranh cách mạng cho nhân dân, cho các thế hệ thanh thiếu niên hôm nay và mai sau.',
+      ],
+    };
+  }
+
+  return null;
 };
 
 export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
@@ -30,10 +84,8 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
         ? site.galleryImages 
         : [site.image || site.imageUrl]);
 
-  // Xác định nhãn tóm tắt phù hợp với di tích
-  const summaryLabel = site.name.toLowerCase().includes('phạm văn chí')
-    ? 'Tóm Tắt Tiểu Sử Tiền Nhân'
-    : 'Tóm Tắt Bối Cảnh Lịch Sử';
+  const historicalProfile = getHistoricalExcerptProfile(site);
+  const displayAddress = historicalProfile ? historicalProfile.exactAddress : site.address;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
@@ -62,7 +114,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
             {/* Dòng địa chỉ bên dưới: text-xs trên 1 hàng ngang liền mạch kèm icon vị trí 📍 */}
             <p className="text-xs text-amber-100/90 flex items-center gap-1.5 font-medium truncate whitespace-nowrap">
               <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="truncate">{site.address}</span>
+              <span className="truncate">{displayAddress}</span>
             </p>
           </div>
 
@@ -138,30 +190,59 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Tóm tắt tiểu sử / Bối cảnh lịch sử */}
-              {site.summary && (
-                <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-2xs">
-                  <h4 className="text-xs font-bold uppercase text-red-900 flex items-center gap-1.5 tracking-wide">
-                    <Landmark className="w-3.5 h-3.5 text-red-700 shrink-0" />
-                    <span>{summaryLabel}</span>
-                  </h4>
-                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal text-justify">
-                    {site.summary}
-                  </p>
-                </div>
-              )}
+              {/* ĐOẠN TRÍCH DẪN LỊCH SỬ CHUẨN XÁC NẾU LÀ 3 DI TÍCH LỊCH SỬ QUAN TRỌNG */}
+              {historicalProfile ? (
+                <div className="space-y-3 bg-amber-50/50 p-4 sm:p-5 rounded-2xl border border-amber-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-amber-200 pb-2.5">
+                    <h4 className="text-xs font-bold uppercase text-red-900 flex items-center gap-2 tracking-wide">
+                      <BookOpen className="w-4 h-4 text-red-700 shrink-0" />
+                      <span>TRÍCH NỘI DUNG LỊCH SỬ & GIÁ TRỊ TRUYỀN THỐNG</span>
+                    </h4>
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded-md">
+                      📍 {historicalProfile.exactAddress}
+                    </span>
+                  </div>
 
-              {/* Ý nghĩa lịch sử & Giá trị truyền thống */}
-              {site.detailedHistory && (
-                <div className="space-y-2 bg-red-50/40 p-4 rounded-2xl border border-red-200/70 shadow-2xs">
-                  <h4 className="text-xs font-bold uppercase text-red-950 flex items-center gap-1.5 tracking-wide border-b border-red-100 pb-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-red-700 shrink-0" />
-                    <span>Ý NGHĨA LỊCH SỬ & GIÁ TRỊ TRUYỀN THỐNG</span>
-                  </h4>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-normal whitespace-pre-line text-justify">
-                    {site.detailedHistory}
-                  </p>
+                  <div className="space-y-3 pt-1">
+                    {historicalProfile.quotes.map((quote, idx) => (
+                      <div
+                        key={idx}
+                        className="relative pl-3.5 py-1 border-l-2 border-amber-500/80 bg-white/70 p-3 rounded-r-xl shadow-2xs"
+                      >
+                        <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-normal text-justify">
+                          &ldquo;{quote}&rdquo;
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              ) : (
+                /* Fallback cho di tích do người dùng tự tạo */
+                <>
+                  {site.summary && (
+                    <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                      <h4 className="text-xs font-bold uppercase text-red-900 flex items-center gap-1.5 tracking-wide">
+                        <Landmark className="w-3.5 h-3.5 text-red-700 shrink-0" />
+                        <span>Tóm Tắt Bối Cảnh Lịch Sử</span>
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal text-justify">
+                        {site.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {site.detailedHistory && (
+                    <div className="space-y-2 bg-red-50/40 p-4 rounded-2xl border border-red-200/70 shadow-2xs">
+                      <h4 className="text-xs font-bold uppercase text-red-950 flex items-center gap-1.5 tracking-wide border-b border-red-100 pb-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-red-700 shrink-0" />
+                        <span>Ý NGHĨA LỊCH SỬ & GIÁ TRỊ TRUYỀN THỐNG</span>
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-normal whitespace-pre-line text-justify">
+                        {site.detailedHistory}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -233,7 +314,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
         {/* Modal Footer Actions - Pure Yellow Directions Button */}
         <div className="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end shrink-0">
           <a
-            href={getGoogleMapsDirLink(site.address)}
+            href={getGoogleMapsDirLink(displayAddress)}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full min-h-[44px] px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all"
