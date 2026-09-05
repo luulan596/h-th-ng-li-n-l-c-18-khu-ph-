@@ -35,7 +35,9 @@ export async function fetchAllHeadquarters(): Promise<Headquarters[]> {
         console.log(`[MapService] Đã tải thành công ${data.length} điểm từ toadotruso.`);
         const mapped: Headquarters[] = data.map((item: any) => ({
           id: item.ma_tru_so || item.id || `hq-${Math.random()}`,
-          tenTruSo: item.ten_tru_so || '',
+          tenTruSo: (item.ten_tru_so === 'Ủy ban nhân dân Phường' || item.ma_tru_so === 'UBND' || item.id === 'ubnd-phuong')
+            ? 'ĐẢNG ỦY - HĐND - UBND - UBMTTQVN PHƯỜNG'
+            : (item.ten_tru_so || ''),
           loaiTruSo: item.loai_diem === 'CO_QUAN' ? 'CO_QUAN' : (item.loai_diem === 'KHU_PHO' ? 'khu_pho' : item.loai_diem),
           khuPhoThuocVong: item.khu_pho || item.khu_pho_thuoc_vong || '',
           diaChi: item.dia_chi || '',
@@ -67,7 +69,12 @@ export async function fetchAllHeadquarters(): Promise<Headquarters[]> {
     try {
       const parsed: Headquarters[] = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.filter((p) => p.loaiTruSo === 'khu_pho').length >= 18) {
-        return parsed;
+        return parsed.map(item => {
+          if (item.id === 'ubnd-phuong' || item.tenTruSo === 'Ủy ban nhân dân Phường' || item.ma_tru_so === 'UBND') {
+            return { ...item, tenTruSo: 'ĐẢNG ỦY - HĐND - UBND - UBMTTQVN PHƯỜNG' };
+          }
+          return item;
+        });
       }
     } catch (e) {
       console.error('[MapService] Lỗi parse LocalStorage:', e);

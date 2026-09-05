@@ -1077,7 +1077,7 @@ export const INITIAL_PERSONNEL_DATA: Personnel[] = [
 export const ADMINISTRATIVE_HEADQUARTERS: Headquarters[] = [
   {
     id: 'ubnd-phuong',
-    tenTruSo: 'Ủy ban nhân dân Phường',
+    tenTruSo: 'ĐẢNG ỦY - HĐND - UBND - UBMTTQVN PHƯỜNG',
     loaiTruSo: 'ubnd',
     ma_tru_so: 'UBND',
     diaChi: '1378 Võ Văn Kiệt, Phường Bình Tiên, TP. Hồ Chí Minh',

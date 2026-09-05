@@ -85,7 +85,12 @@ export default function App() {
       try {
         const parsed: Headquarters[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.filter(p => p.loaiTruSo === 'khu_pho').length >= 18) {
-          return parsed;
+          return parsed.map(item => {
+            if (item.id === 'ubnd-phuong' || item.tenTruSo === 'Ủy ban nhân dân Phường' || item.ma_tru_so === 'UBND') {
+              return { ...item, tenTruSo: 'ĐẢNG ỦY - HĐND - UBND - UBMTTQVN PHƯỜNG' };
+            }
+            return item;
+          });
         }
       } catch (e) { /* fallback */ }
     }

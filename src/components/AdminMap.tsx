@@ -400,9 +400,14 @@ export const AdminMap: React.FC<AdminMapProps> = ({
               className="w-full bg-red-950 border border-amber-500/30 text-amber-50 text-xs font-bold rounded-lg py-2.5 px-3 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 appearance-none cursor-pointer shadow-sm"
             >
               <option value="all">Tất cả {govCount} Cơ quan Phường</option>
-              {govList.map(hq => (
-                <option key={hq.id} value={hq.id}>{hq.tenTruSo}</option>
-              ))}
+              {govList.map(hq => {
+                const displayName = (hq.tenTruSo === 'Ủy ban nhân dân Phường' || hq.id === 'ubnd-phuong' || hq.ma_tru_so === 'UBND')
+                  ? 'ĐẢNG ỦY - HĐND - UBND - UBMTTQVN PHƯỜNG'
+                  : hq.tenTruSo;
+                return (
+                  <option key={hq.id} value={hq.id}>{displayName}</option>
+                );
+              })}
             </select>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-amber-500">
               <ChevronDown className="w-4 h-4" />
@@ -498,8 +503,10 @@ export const AdminMap: React.FC<AdminMapProps> = ({
           <div className="absolute bottom-4 left-3 right-3 sm:left-4 sm:right-auto sm:max-w-[320px] z-20 bg-white rounded-xl p-2.5 sm:p-3 shadow-2xl border border-amber-300 animate-slide-up">
             
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <span className="inline-block px-2 py-0.5 rounded font-bold uppercase text-[10px] bg-red-900 text-amber-300 tracking-wide shadow-xs truncate max-w-[200px]">
-                {selectedHq.tenTruSo}
+              <span className="inline-block px-2 py-0.5 rounded font-bold uppercase text-[10px] bg-red-900 text-amber-300 tracking-wide shadow-xs truncate max-w-[240px] sm:max-w-none">
+                {(selectedHq.tenTruSo === 'Ủy ban nhân dân Phường' || selectedHq.id === 'ubnd-phuong' || selectedHq.ma_tru_so === 'UBND')
+                  ? 'ĐẢNG ỦY - HĐND - UBND - UBMTTQVN PHƯỜNG'
+                  : selectedHq.tenTruSo}
               </span>
               <button
                 onClick={() => setSelectedHq(null)}
