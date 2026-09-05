@@ -166,15 +166,15 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     if (!window.confirm('Đồng chí có chắc chắn muốn xóa lịch công tác này khỏi hệ thống?')) {
       return;
     }
-    const res = await deleteScheduledNotification(id);
-    if (res.success) {
+    const success = await deleteScheduledNotification(id);
+    if (success) {
       toast('Đã xóa thông báo thành công!');
       loadNotifications();
       if (editingNotifId === String(id)) {
         handleResetForm();
       }
     } else {
-      toast(res.message);
+      toast('Không thể xóa thông báo.');
     }
   };
 

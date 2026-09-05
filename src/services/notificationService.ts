@@ -9,6 +9,7 @@
  */
 
 import { PushSubscriber, ScheduledNotification } from '../types';
+export type { PushSubscriber, ScheduledNotification };
 import { getSupabase } from './supabaseClient';
 
 /**
@@ -782,7 +783,7 @@ export async function triggerImmediatePushNotification(payload: {
               url: '/',
               id: notifId
             }
-          });
+          } as NotificationOptions & { vibrate?: number[] });
         }
       } catch (swErr) {
         console.warn('[PushService] Không thể hiển thị qua ServiceWorker showNotification:', swErr);
