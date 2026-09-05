@@ -220,6 +220,7 @@ export async function saveScheduledNotification(input: {
           nguoi_tao: newNotification.nguoi_tao,
         };
         saveScheduledToLocalCache(savedItem);
+        notifyScheduledNotificationsUpdated();
         return {
           success: true,
           data: savedItem,
@@ -258,6 +259,7 @@ export async function saveScheduledNotification(input: {
             nguoi_tao: newNotification.nguoi_tao,
           };
           saveScheduledToLocalCache(savedItem);
+          notifyScheduledNotificationsUpdated();
           return {
             success: true,
             data: savedItem,
@@ -272,6 +274,7 @@ export async function saveScheduledNotification(input: {
 
   // Lưu fallback vào LocalStorage
   saveScheduledToLocalCache(newNotification);
+  notifyScheduledNotificationsUpdated();
   return {
     success: true,
     data: newNotification,
@@ -459,6 +462,7 @@ export async function updateScheduledNotification(
           nguoi_tao: data.nguoi_tao || 'Ban Quản trị',
         };
         saveScheduledToLocalCache(resultItem);
+        notifyScheduledNotificationsUpdated();
         return {
           success: true,
           data: resultItem,
@@ -486,6 +490,7 @@ export async function updateScheduledNotification(
     }
   }
 
+  notifyScheduledNotificationsUpdated();
   return {
     success: true,
     message: 'Đã cập nhật thay thế thông báo thành công!',
@@ -520,6 +525,7 @@ export async function deleteScheduledNotification(id: string | number): Promise<
     }
   }
 
+  notifyScheduledNotificationsUpdated();
   return true;
 }
 
@@ -538,14 +544,14 @@ export async function clearAllScheduledNotifications(): Promise<{ success: boole
   const supabase = getSupabase();
   if (supabase) {
     try {
-      // PostgREST yêu cầu bộ lọc khi gọi DELETE, sử dụng lọc neq giá trị ảo
-      const { error } = await supabase
+      // Dùng .not('id', 'is', null) xóa toàn bộ các dòng có id khác null
+      let { error } = await supabase
         .from('scheduled_notifications')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
+        .not('id', 'is', null);
 
       if (error) {
-        console.warn('[PushService] Lỗi delete neq, thử lọc theo created_at:', error);
+        console.warn('[PushService] Lỗi delete not id null, thử lọc theo created_at:', error);
         await supabase
           .from('scheduled_notifications')
           .delete()
@@ -556,9 +562,93 @@ export async function clearAllScheduledNotifications(): Promise<{ success: boole
     }
   }
 
+  notifyScheduledNotificationsUpdated();
   return {
     success: true,
     message: 'Đã xóa toàn bộ lịch thông báo trong hệ thống!',
+  };
+}
+
+/**
+ * Phát tín hiệu thông báo danh sách lịch đã được cập nhật (Thêm/Sửa/Xóa/Xóa tất cả)
+ * Đồng bộ tức thì trong cùng tab và xuyên suốt các tab qua BroadcastChannel & Window Event.
+ */
+export function notifyScheduledNotificationsUpdated() {
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent('mttq_scheduled_notifications_updated'));
+    } catch {}
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        const bc = new BroadcastChannel('mttq_scheduled_channel');
+        bc.postMessage({ type: 'SCHEDULE_UPDATED', timestamp: Date.now() });
+        bc.close();
+      } catch {}
+    }
+  }
+}
+
+/**
+ * Đăng ký lắng nghe Realtime thay đổi từ bảng `scheduled_notifications` (Supabase Realtime)
+ * và các sự kiện đồng bộ từ Local/Cross-Tab.
+ */
+export function subscribeToScheduledNotificationsRealtime(onUpdate: () => void): () => void {
+  const handleUpdate = () => {
+    onUpdate();
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('mttq_scheduled_notifications_updated', handleUpdate);
+    window.addEventListener('storage', (e) => {
+      if (e.key === LOCAL_SCHEDULED_NOTIFS_KEY) {
+        onUpdate();
+      }
+    });
+  }
+
+  let broadcastChannel: BroadcastChannel | null = null;
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      broadcastChannel = new BroadcastChannel('mttq_scheduled_channel');
+      broadcastChannel.onmessage = (event) => {
+        if (event.data?.type === 'SCHEDULE_UPDATED') {
+          onUpdate();
+        }
+      };
+    } catch {}
+  }
+
+  // Kết nối Supabase Realtime Channel
+  const supabase = getSupabase();
+  let channel: any = null;
+  if (supabase) {
+    try {
+      channel = supabase
+        .channel('realtime_scheduled_notifications_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'scheduled_notifications' },
+          (payload) => {
+            console.log('[Supabase Realtime] Thay đổi trên scheduled_notifications:', payload);
+            onUpdate();
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('[Supabase Realtime] Lỗi đăng ký kênh:', e);
+    }
+  }
+
+  return () => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('mttq_scheduled_notifications_updated', handleUpdate);
+    }
+    if (broadcastChannel) {
+      try { broadcastChannel.close(); } catch {}
+    }
+    if (channel && supabase) {
+      try { supabase.removeChannel(channel); } catch {}
+    }
   };
 }
 
@@ -989,8 +1079,8 @@ export async function broadcastToAllDevices(payload: {
         if (registration && 'showNotification' in registration) {
           await registration.showNotification(formattedTitle, {
             body: detailedBodyText,
-            icon: '/icon.png',
-            badge: '/icon.png',
+            icon: '/mat-tran-logo.svg',
+            badge: '/mat-tran-logo.svg',
             vibrate: [200, 100, 200, 100, 300],
             tag: notifId,
             renotify: true,

@@ -17,7 +17,8 @@ import {
   CalendarDays,
   Lock,
   ChevronRight,
-  Download
+  Download,
+  LogOut
 } from 'lucide-react';
 import {
   ScheduledNotification,
@@ -26,6 +27,7 @@ import {
   updateScheduledNotification,
   deleteScheduledNotification,
   clearAllScheduledNotifications,
+  subscribeToScheduledNotificationsRealtime,
   triggerImmediatePushNotification,
   broadcastToAllDevices,
   startNotificationBackgroundScheduler
@@ -83,14 +85,26 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     }
   };
 
-  // Load scheduled notifications on mount and start background scheduler
+  // Load scheduled notifications on mount, subscribe to realtime updates, and start background scheduler
   useEffect(() => {
     loadNotifications();
-    // Kích hoạt Bộ đếm tự động phát tức thì (Background Scheduler quét mỗi 15 - 30 giây)
-    startNotificationBackgroundScheduler(() => {
+
+    // Đồng bộ Realtime tức thì khi Admin thêm, sửa, xóa hoặc kích hoạt thông báo
+    const unsubscribeRealtime = subscribeToScheduledNotificationsRealtime(() => {
       loadNotifications();
       if (onRefreshInAppNotifications) onRefreshInAppNotifications();
     });
+
+    // Kích hoạt Bộ đếm tự động phát tức thì (Background Scheduler quét mỗi 15 - 30 giây)
+    const stopScheduler = startNotificationBackgroundScheduler(() => {
+      loadNotifications();
+      if (onRefreshInAppNotifications) onRefreshInAppNotifications();
+    });
+
+    return () => {
+      unsubscribeRealtime();
+      if (typeof stopScheduler === 'function') stopScheduler();
+    };
   }, []);
 
   const loadNotifications = async () => {
@@ -244,6 +258,17 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     } catch (err: any) {
       toast(`Lỗi khi xóa toàn bộ lịch: ${err?.message || 'Vui lòng kiểm tra lại'}`);
     }
+  };
+
+  // Đăng xuất quyền Quản trị viên Admin (yeunuhotranp7)
+  const handleAdminLogout = () => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('mt_auth_account');
+    }
+    setAuthAccount(null);
+    setIsAdminWorkspace(false);
+    handleResetForm();
+    toast('Đã đăng xuất tài khoản quản trị! Trở lại màn hình công khai người dân.');
   };
 
   // 1. SAVE SCHEDULE (Lưu lịch phát thông thường hoặc CẬP NHẬT THAY THẾ)
@@ -502,10 +527,22 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
               <span>← Quay lại lịch công tác</span>
             </button>
 
-            <span className="px-3 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-full text-xs font-bold flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              <span>Không gian Quản trị Lịch & Điều hành</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-full text-xs font-bold flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                <span>Không gian Quản trị (yeunuhotranp7)</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 hover:border-red-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                title="Đăng xuất quyền Admin"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
           </div>
 
           {/* BIỂU MẪU LÊN LỊCH & PHÁT THÔNG BÁO TỨC THÌ */}
@@ -841,22 +878,63 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
         /* GIAO DIỆN 2: DÀNH CHO CÁN BỘ & NHÂN DÂN XEM CÔNG KHAI                    */
         /* ========================================================================= */
         <div className="space-y-4 animate-in fade-in duration-200">
-          {/* Nút bấm Quản trị: Lên lịch phát thông báo */}
+          {/* Nút bấm Quản trị & Phân quyền Admin (yeunuhotranp7) */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs font-semibold text-slate-500">
               Lịch giao ban Thường trực, tiếp xúc cử tri & sinh hoạt Ban CTMT 18 Khu phố.
             </span>
 
-            <button
-              id="btn-admin-schedule-notif"
-              type="button"
-              onClick={handleOpenAdminWorkspace}
-              className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-200 shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Dành cho Quản trị viên: Đăng nhập để lên lịch và quản lý thông báo"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              <span>Quản trị: Lên lịch phát thông báo</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* PHÂN QUYỀN ADMIN (yeunuhotranp7): Chỉ hiển thị các chức năng Quản trị và Xóa tất cả lịch khi đã đăng nhập Admin */}
+              {authAccount === 'yeunuhotranp7' ? (
+                <>
+                  <button
+                    type="button"
+                    id="btn-public-clear-all-schedules"
+                    onClick={handleClearAll}
+                    disabled={scheduledNotifs.length === 0}
+                    className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                    title="Xóa toàn bộ tất cả thông báo trong cơ sở dữ liệu Supabase"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>🗑️ Xóa tất cả lịch</span>
+                  </button>
+
+                  <button
+                    id="btn-admin-schedule-notif"
+                    type="button"
+                    onClick={handleOpenAdminWorkspace}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                    title="Mở Bảng điều khiển Quản trị để lên lịch và quản lý"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-200" />
+                    <span>Bảng Quản trị</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleAdminLogout}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 hover:border-red-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    title="Đăng xuất quyền Admin"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </>
+              ) : (
+                /* Màn hình công khai của người dân: TUYỆT ĐỐI KHÔNG CÓ NÚT SỬA/XÓA. Chỉ có nút mở modal đăng nhập */
+                <button
+                  id="btn-admin-schedule-notif"
+                  type="button"
+                  onClick={handleOpenAdminWorkspace}
+                  className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-200 shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer"
+                  title="Dành cho Quản trị viên: Đăng nhập để lên lịch và quản lý thông báo"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Quản trị: Lên lịch phát thông báo</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* DANH SÁCH LỊCH CÔNG TÁC ĐÃ PHÁT HÀNH */}
@@ -926,18 +1004,46 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                       )}
                     </div>
 
-                    {/* NÚT DUY NHẤT: [🔔 NHẮC TÔI / LƯU VÀO LỊCH] - TỰ ĐỘNG NHẬN DIỆN HỆ ĐIỀU HÀNH */}
-                    <div className="pt-3 border-t border-slate-100">
+                    {/* HÀNG NÚT THAO TÁC (Tự động nhận diện hệ điều hành & Phân quyền Admin yeunuhotranp7) */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
                       <button
                         id={`btn-remind-meeting-${item.id}`}
                         type="button"
                         onClick={() => handleRemindScheduledMeeting(item)}
-                        className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs hover:shadow-sm transition-all active:scale-95 cursor-pointer"
+                        className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs hover:shadow-sm transition-all active:scale-95 cursor-pointer"
                         title="Tự động thêm vào Apple Calendar (iOS/Mac) hoặc Google Calendar (Android/Windows)"
                       >
                         <Bell className="w-4 h-4 text-amber-100" />
                         <span>🔔 NHẮC TÔI / LƯU VÀO LỊCH</span>
                       </button>
+
+                      {/* PHÂN QUYỀN ADMIN (yeunuhotranp7): Màn hình công khai bên ngoài của người dân tuyệt đối KHÔNG có nút Sửa/Xóa.
+                          Chỉ khi đăng nhập thành công tài khoản quản trị Admin (yeunuhotranp7) thì mới hiển thị ✏️ Sửa, 🗑️ Xóa */}
+                      {authAccount === 'yeunuhotranp7' && (
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAdminWorkspace(true);
+                              handleStartEdit(item);
+                            }}
+                            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                            title="Sửa thông báo lịch này"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Sửa</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteNotif(item.id)}
+                            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                            title="Xóa thông báo lịch này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                            <span>Xóa</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

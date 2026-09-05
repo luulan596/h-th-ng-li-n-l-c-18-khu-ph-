@@ -7,6 +7,7 @@ import {
   saveScheduledNotification,
   updateScheduledNotification,
   deleteScheduledNotification,
+  subscribeToScheduledNotificationsRealtime,
   triggerImmediatePushNotification,
   OfficialDocument,
   OFFICIAL_DOCUMENTS,
@@ -266,9 +267,13 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
     }
   };
 
-  // Load scheduled notifications on mount
+  // Load scheduled notifications on mount and subscribe to realtime updates
   useEffect(() => {
     loadScheduledNotifications();
+    const unsub = subscribeToScheduledNotificationsRealtime(() => {
+      loadScheduledNotifications();
+    });
+    return () => unsub();
   }, []);
 
   const loadScheduledNotifications = async () => {
@@ -1205,7 +1210,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-28">
       {/* Toast Notification */}
       {calendarToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 border border-amber-400/40 backdrop-blur-md animate-in fade-in slide-in-from-top-2">
@@ -1216,32 +1221,37 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
 
       {/* Header Banner - CHỈ HIỂN THỊ KHI Ở MÀN HÌNH DANH MỤC GỐC (activeUtilityTab === null) */}
       {activeUtilityTab === null && (
-        <div className="bg-gradient-to-r from-red-950 via-red-900 to-amber-900 text-white p-5 sm:p-6 rounded-2xl shadow-md border border-amber-500/30 animate-in fade-in duration-200 relative overflow-hidden">
-          <div className="flex items-start justify-between gap-3 sm:gap-4 relative z-10">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2 border border-amber-400/40">
-                <Sparkles className="w-3.5 h-3.5" />
+        <div className="bg-gradient-to-r from-red-950 via-red-900 to-amber-900 text-white p-4 sm:p-6 rounded-2xl shadow-md border border-amber-500/30 animate-in fade-in duration-200 relative overflow-hidden">
+          <div className="relative z-10 space-y-2.5">
+            {/* Hàng trên: Badge Tiêu đề & Nút 🔒 Quản trị với flex flex-wrap items-center justify-between gap-2 */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/40 shrink-0">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                 <span>TRUNG TÂM TIỆN ÍCH SỐ MẶT TRẬN</span>
               </div>
-              <h2 className="text-sm sm:text-xl md:text-2xl font-black font-sans uppercase tracking-tight text-amber-200 whitespace-nowrap">
+
+              {/* Nút bấm Quản trị (🔒 Quản trị) riêng biệt, rõ ràng với shrink-0, text-xs, px-3 py-1.5 whitespace-nowrap */}
+              <button
+                id="btn-admin-toggle-utilities"
+                type="button"
+                onClick={handleOpenToggleAdmin}
+                title="Quản trị Bật / Khóa chức năng Tiện ích"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 text-amber-300 hover:text-amber-200 border border-amber-400/40 hover:border-amber-300 shadow-sm transition-all cursor-pointer backdrop-blur-xs group active:scale-95 whitespace-nowrap"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
+                <span className="text-xs font-bold whitespace-nowrap">🔒 Quản trị</span>
+              </button>
+            </div>
+
+            {/* Tiêu đề & Giới thiệu: Không dùng whitespace-nowrap để chữ không bị tràn trên màn hình điện thoại */}
+            <div>
+              <h2 className="text-base sm:text-xl md:text-2xl font-black font-sans uppercase tracking-tight text-amber-200 leading-snug">
                 TIỆN ÍCH & ĐIỀU HÀNH CÔNG TÁC MẶT TRẬN
               </h2>
-              <p className="text-xs sm:text-sm text-red-100/90 mt-1 max-w-2xl">
+              <p className="text-xs sm:text-sm text-red-100/90 mt-1 max-w-2xl leading-relaxed">
                 Hệ sinh thái công cụ hỗ trợ cán bộ Mặt trận và Nhân dân: Thống kê số liệu, Lịch công tác, Văn bản chỉ đạo và Kênh tiếp nhận ý kiến đóng góp.
               </p>
             </div>
-
-            {/* Nút icon quản trị Bật/Khóa chức năng ở góc trên bên phải banner */}
-            <button
-              id="btn-admin-toggle-utilities"
-              type="button"
-              onClick={handleOpenToggleAdmin}
-              title="Quản trị Bật / Khóa chức năng Tiện ích"
-              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-black/40 hover:bg-black/60 text-amber-300 hover:text-amber-200 border border-amber-400/40 hover:border-amber-300 shadow-sm transition-all cursor-pointer backdrop-blur-xs group active:scale-95"
-            >
-              <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] sm:text-xs font-bold whitespace-nowrap">Quản trị</span>
-            </button>
           </div>
         </div>
       )}

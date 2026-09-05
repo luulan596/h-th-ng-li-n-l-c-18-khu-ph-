@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/mat-tran-logo.svg',
   '/mat_tran_logo.svg',
   '/pwa-512x512.png?v=2026',
   '/pwa-192x192.png?v=2026',
@@ -109,8 +110,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: bodyText,
-    icon: '/icon.png',
-    badge: '/icon.png',
+    icon: '/mat-tran-logo.svg',
+    badge: '/mat-tran-logo.svg',
     vibrate: [200, 100, 200, 100, 300],
     tag: data.id ? String(data.id) : `notif-${Date.now()}`,
     renotify: true,
@@ -150,8 +151,8 @@ self.addEventListener('message', (event) => {
     const { title, options } = event.data;
     const finalOptions = {
       body: options?.body || '',
-      icon: '/icon.png',
-      badge: '/icon.png',
+      icon: '/mat-tran-logo.svg',
+      badge: '/mat-tran-logo.svg',
       vibrate: [200, 100, 200, 100, 300],
       tag: options?.tag || `msg-${Date.now()}`,
       renotify: true,
