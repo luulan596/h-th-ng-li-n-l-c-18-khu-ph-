@@ -23,9 +23,12 @@ import {
   ScheduledNotification,
   fetchScheduledNotifications,
   saveScheduledNotification,
+  updateScheduledNotification,
   deleteScheduledNotification,
+  clearAllScheduledNotifications,
   triggerImmediatePushNotification,
-  broadcastToAllDevices
+  broadcastToAllDevices,
+  startNotificationBackgroundScheduler
 } from '../services/notificationService';
 
 interface ScheduleManagementProps {
@@ -80,9 +83,14 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     }
   };
 
-  // Load scheduled notifications on mount
+  // Load scheduled notifications on mount and start background scheduler
   useEffect(() => {
     loadNotifications();
+    // Kích hoạt Bộ đếm tự động phát tức thì (Background Scheduler quét mỗi 15 - 30 giây)
+    startNotificationBackgroundScheduler(() => {
+      loadNotifications();
+      if (onRefreshInAppNotifications) onRefreshInAppNotifications();
+    });
   }, []);
 
   const loadNotifications = async () => {
@@ -95,6 +103,39 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     } finally {
       setIsLoadingNotifs(false);
     }
+  };
+
+  // NÚT CHỌN NHANH 'SAU 5 PHÚT NỮA' & CHUẨN HÓA GIỜ VIỆT NAM (GMT+7)
+  const handleSetPlus5Minutes = () => {
+    const now = new Date();
+    // Cộng thêm đúng 5 phút
+    const target = new Date(now.getTime() + 5 * 60 * 1000);
+    const year = target.getFullYear();
+    const month = String(target.getMonth() + 1).padStart(2, '0');
+    const date = String(target.getDate()).padStart(2, '0');
+    const hour = String(target.getHours()).padStart(2, '0');
+    const minute = String(target.getMinutes()).padStart(2, '0');
+
+    setNotifDate(`${year}-${month}-${date}`);
+    setNotifHour(hour);
+    setNotifMinute(minute);
+    toast(`⏱️ Đã chọn phát sau 5 phút: ${hour}:${minute} (${date}/${month}/${year})`);
+  };
+
+  const handleSetToday = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const date = String(now.getDate()).padStart(2, '0');
+    setNotifDate(`${year}-${month}-${date}`);
+  };
+
+  const handleSetTomorrow = () => {
+    const tomorrow = new Date(Date.now() + 86400000);
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const date = String(tomorrow.getDate()).padStart(2, '0');
+    setNotifDate(`${year}-${month}-${date}`);
   };
 
   // Open Admin Workspace
@@ -138,9 +179,10 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     setEditingNotifId(null);
   };
 
-  // Handle Edit existing item
+  // Handle Edit existing item (đổ dữ liệu lên form để sửa đè, không tạo bản ghi mới)
   const handleStartEdit = (item: ScheduledNotification) => {
-    setEditingNotifId(String(item.id));
+    const safeId = String(item.id);
+    setEditingNotifId(safeId);
     setNotifTitle(item.tieu_de || '');
     setNotifLocation(item.dia_diem || 'Hội trường UBND Phường');
     setNotifContent(item.noi_dung || '');
@@ -148,7 +190,10 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     if (item.thoi_gian_gui) {
       try {
         const dt = new Date(item.thoi_gian_gui);
-        setNotifDate(dt.toISOString().split('T')[0]);
+        const year = dt.getFullYear();
+        const month = String(dt.getMonth() + 1).padStart(2, '0');
+        const date = String(dt.getDate()).padStart(2, '0');
+        setNotifDate(`${year}-${month}-${date}`);
         setNotifHour(String(dt.getHours()).padStart(2, '0'));
         setNotifMinute(String(dt.getMinutes()).padStart(2, '0'));
       } catch {
@@ -156,30 +201,52 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
       }
     }
 
+    toast(`✏️ Đang chỉnh sửa thông báo: "${item.tieu_de}". Dữ liệu sẽ được ghi đè trực tiếp.`);
     const formCard = document.getElementById('admin-schedule-form-card');
     if (formCard) {
       formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
-  // Handle Delete
+  // Handle Delete từng thông báo
   const handleDeleteNotif = async (id: string | number) => {
     if (!window.confirm('Đồng chí có chắc chắn muốn xóa lịch công tác này khỏi hệ thống?')) {
       return;
     }
-    const success = await deleteScheduledNotification(id);
-    if (success) {
-      toast('Đã xóa thông báo thành công!');
-      loadNotifications();
-      if (editingNotifId === String(id)) {
-        handleResetForm();
-      }
-    } else {
-      toast('Không thể xóa thông báo.');
+    const safeId = String(id);
+    // Cập nhật giao diện ngay lập tức
+    setScheduledNotifs((prev) => prev.filter((x) => String(x.id) !== safeId));
+    if (editingNotifId === safeId) {
+      handleResetForm();
+    }
+    await deleteScheduledNotification(id);
+    toast('🗑️ Đã xóa thông báo thành công!');
+    await loadNotifications();
+    if (onRefreshInAppNotifications) onRefreshInAppNotifications();
+  };
+
+  // Bổ sung nút 'XÓA TẤT CẢ LỊCH' (Clear All)
+  const handleClearAll = async () => {
+    if (
+      !window.confirm(
+        'CẢNH BÁO: Đồng chí có chắc chắn muốn XÓA TOÀN BỘ tất cả các lịch thông báo trong cơ sở dữ liệu Supabase? Hành động này sẽ làm sạch hoàn toàn và không thể hoàn tác!'
+      )
+    ) {
+      return;
+    }
+    try {
+      setScheduledNotifs([]);
+      handleResetForm();
+      const res = await clearAllScheduledNotifications();
+      toast(`🗑️ ${res.message}`);
+      await loadNotifications();
+      if (onRefreshInAppNotifications) onRefreshInAppNotifications();
+    } catch (err: any) {
+      toast(`Lỗi khi xóa toàn bộ lịch: ${err?.message || 'Vui lòng kiểm tra lại'}`);
     }
   };
 
-  // 1. SAVE SCHEDULE (Lưu lịch phát thông thường)
+  // 1. SAVE SCHEDULE (Lưu lịch phát thông thường hoặc CẬP NHẬT THAY THẾ)
   const handleSaveSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!notifTitle.trim()) {
@@ -201,9 +268,9 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
       const result = await saveScheduledNotification(itemToSave);
       if (result.success) {
-        toast(editingNotifId ? 'Đã cập nhật thông báo thành công!' : 'Đã lên lịch phát thông báo thành công!');
+        toast(editingNotifId ? '💾 Đã cập nhật thay thế thông báo thành công!' : 'Đã lên lịch phát thông báo thành công!');
         handleResetForm();
-        loadNotifications();
+        await loadNotifications();
         if (onRefreshInAppNotifications) onRefreshInAppNotifications();
       } else {
         toast(result.message || 'Lỗi khi lưu lịch');
@@ -320,6 +387,73 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
       });
     } catch {
       return '';
+    }
+  };
+
+  // Helper to generate & download .ics file for Apple Calendar (iOS / macOS)
+  const downloadICS = (item: ScheduledNotification, start: Date, end: Date) => {
+    const formatICSDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const icsData = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//UBMTTQ Binh Tien//Lich Hop//VI',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:mt-meet-${item.id}-${Date.now()}@mttq-binhtien.gov.vn`,
+      `DTSTAMP:${formatICSDate(new Date())}`,
+      `DTSTART:${formatICSDate(start)}`,
+      `DTEND:${formatICSDate(end)}`,
+      `SUMMARY:${item.tieu_de}`,
+      `LOCATION:${item.dia_diem || 'Hội trường UBND Phường Bình Tiên'}`,
+      `DESCRIPTION:${item.noi_dung || 'Kính mời quý đại biểu tham dự cuộc họp đúng giờ.'}`,
+      'STATUS:CONFIRMED',
+      'BEGIN:VALARM',
+      'TRIGGER:-PT30M',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Nhắc nhở họp trước 30 phút',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `LichHop-MTTQ-${item.id || Date.now()}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Helper to open Google Calendar event creation
+  const openGoogleCalendar = (item: ScheduledNotification, start: Date, end: Date) => {
+    const formatGCalDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const title = encodeURIComponent(item.tieu_de || 'Lịch họp Mặt trận');
+    const details = encodeURIComponent(item.noi_dung || '');
+    const location = encodeURIComponent(item.dia_diem || 'Hội trường UBND Phường Bình Tiên');
+    const dates = `${formatGCalDate(start)}/${formatGCalDate(end)}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Handle Remind Meeting
+  const handleRemindScheduledMeeting = (item: ScheduledNotification) => {
+    const start = new Date(item.thoi_gian_gui);
+    const end = new Date(start.getTime() + 2 * 3600 * 1000);
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    const platform = typeof navigator !== 'undefined' ? ((navigator as any).userAgentData?.platform || navigator.platform || '') : '';
+    const isApple =
+      /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(ua) ||
+      /Mac/i.test(platform) ||
+      (platform === 'MacIntel' && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
+
+    if (isApple) {
+      downloadICS(item, start, end);
+      toast('Đang tải tệp .ics mở ứng dụng Lịch (Apple Calendar)!');
+    } else {
+      openGoogleCalendar(item, start, end);
+      toast('Đang mở Google Calendar để lưu lịch họp!');
     }
   };
 
@@ -444,26 +578,29 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                     />
                     <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
-                  <div className="flex items-center gap-1.5 pt-0.5">
+                  <div className="flex items-center flex-wrap gap-1.5 pt-0.5">
                     <button
                       type="button"
-                      onClick={() => {
-                        const d = new Date();
-                        setNotifDate(d.toISOString().split('T')[0]);
-                      }}
+                      onClick={handleSetToday}
                       className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-semibold cursor-pointer"
                     >
                       Hôm nay
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        const d = new Date(Date.now() + 86400000);
-                        setNotifDate(d.toISOString().split('T')[0]);
-                      }}
+                      onClick={handleSetTomorrow}
                       className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-semibold cursor-pointer"
                     >
                       Ngày mai
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-quick-plus-5-mins"
+                      onClick={handleSetPlus5Minutes}
+                      className="px-2.5 py-0.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded text-[10px] font-bold flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                      title="Tự động lấy đúng giờ hiện tại cộng thêm 5 phút, chuẩn hóa giờ Việt Nam (GMT+7)"
+                    >
+                      <span>⏱️ Sau 5 phút nữa</span>
                     </button>
                   </div>
                 </div>
@@ -488,7 +625,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                       onChange={(e) => setNotifMinute(e.target.value)}
                       className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 font-medium bg-white"
                     >
-                      {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((m) => (
+                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((m) => (
                         <option key={m} value={m}>Phút: {m}</option>
                       ))}
                     </select>
@@ -529,6 +666,16 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
               {/* 5. NÚT HÀNH ĐỘNG 2 NÚT NỔI BẬT: 🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC + LƯU LỊCH GỬI */}
               <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
+                {editingNotifId && (
+                  <button
+                    type="button"
+                    onClick={handleResetForm}
+                    className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                  >
+                    ✕ Hủy sửa
+                  </button>
+                )}
+
                 {/* NÚT 1: 🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC (GỬI ĐẾN TOÀN BỘ THIẾT BỊ) */}
                 <button
                   type="button"
@@ -542,40 +689,59 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                   <span>{isSendingImmediate ? 'ĐANG PHÁT THÔNG BÁO...' : '🚀 PHÁT THÔNG BÁO NGAY LẬP TỨC (GỬI ĐẾN TOÀN BỘ THIẾT BỊ)'}</span>
                 </button>
 
-                {/* NÚT 2: LƯU LỊCH GỬI / CẬP NHẬT THÔNG BÁO */}
-                <button
-                  type="submit"
-                  disabled={isSavingSchedule || isSendingImmediate}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  <Calendar className="w-4 h-4 text-slate-300" />
-                  <span>
-                    {isSavingSchedule 
-                      ? 'ĐANG LƯU...' 
-                      : editingNotifId 
-                      ? 'CẬP NHẬT THÔNG BÁO' 
-                      : 'LƯU LỊCH GỬI'}
-                  </span>
-                </button>
+                {/* NÚT 2: LƯU LỊCH GỬI / CẬP NHẬT THAY THẾ THÔNG BÁO */}
+                {editingNotifId ? (
+                  <button
+                    type="submit"
+                    disabled={isSavingSchedule || isSendingImmediate}
+                    className="px-5 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-md hover:shadow-lg ring-2 ring-amber-300 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                    title="Ghi đè trực tiếp vào bản ghi cũ theo ID trên Supabase, tuyệt đối không tạo bản ghi mới"
+                  >
+                    <span>💾</span>
+                    <span>{isSavingSchedule ? 'ĐANG CẬP NHẬT...' : '💾 CẬP NHẬT THAY THẾ THÔNG BÁO'}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSavingSchedule || isSendingImmediate}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <Calendar className="w-4 h-4 text-slate-300" />
+                    <span>{isSavingSchedule ? 'ĐANG LƯU...' : 'LƯU LỊCH GỬI'}</span>
+                  </button>
+                )}
               </div>
             </form>
           </div>
 
           {/* DANH SÁCH LỊCH ĐÃ TẠO TRONG DATABASE */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h5 className="text-xs sm:text-sm font-black text-slate-900 uppercase flex items-center gap-2">
                 <span>DANH SÁCH THÔNG BÁO & LỊCH CÔNG TÁC ĐÃ LÊN LỊCH</span>
                 <span className="text-xs font-bold text-slate-500">({scheduledNotifs.length})</span>
               </h5>
-              <button
-                type="button"
-                onClick={loadNotifications}
-                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors"
-                title="Tải lại danh sách"
-              >
-                <RotateCw className={`w-4 h-4 ${isLoadingNotifs ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="btn-clear-all-schedules"
+                  onClick={handleClearAll}
+                  disabled={scheduledNotifs.length === 0}
+                  className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                  title="Xóa toàn bộ tất cả thông báo trong cơ sở dữ liệu Supabase"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Xóa tất cả lịch</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={loadNotifications}
+                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  title="Tải lại danh sách"
+                >
+                  <RotateCw className={`w-4 h-4 ${isLoadingNotifs ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             </div>
 
             {scheduledNotifs.length === 0 ? (
@@ -758,6 +924,20 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                           {item.noi_dung}
                         </p>
                       )}
+                    </div>
+
+                    {/* NÚT DUY NHẤT: [🔔 NHẮC TÔI / LƯU VÀO LỊCH] - TỰ ĐỘNG NHẬN DIỆN HỆ ĐIỀU HÀNH */}
+                    <div className="pt-3 border-t border-slate-100">
+                      <button
+                        id={`btn-remind-meeting-${item.id}`}
+                        type="button"
+                        onClick={() => handleRemindScheduledMeeting(item)}
+                        className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs hover:shadow-sm transition-all active:scale-95 cursor-pointer"
+                        title="Tự động thêm vào Apple Calendar (iOS/Mac) hoặc Google Calendar (Android/Windows)"
+                      >
+                        <Bell className="w-4 h-4 text-amber-100" />
+                        <span>🔔 NHẮC TÔI / LƯU VÀO LỊCH</span>
+                      </button>
                     </div>
                   </div>
                 );

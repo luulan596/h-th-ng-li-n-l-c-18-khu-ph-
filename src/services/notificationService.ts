@@ -148,14 +148,28 @@ export async function registerPushSubscriber(): Promise<{
 
 /**
  * Lên lịch gửi thông báo đẩy mới (Ghi vào bảng `scheduled_notifications` với trang_thai: 'pending')
+ * Nếu có input.id (đang sửa), tự động chuyển sang ghi đè (UPDATE) để không tạo bản ghi thừa.
  */
 export async function saveScheduledNotification(input: {
+  id?: string | number;
   tieu_de: string;
   noi_dung: string;
   thoi_gian_gui: string; // ISO string hoặc YYYY-MM-DDTHH:mm
   dia_diem?: string;
   nguoi_tao?: string;
+  loai_thong_bao?: string;
 }): Promise<{ success: boolean; data?: ScheduledNotification; message: string }> {
+  // Nếu có id -> Gọi updateScheduledNotification để ghi đè, tuyệt đối không tạo thêm bản ghi trùng lặp
+  if (input.id) {
+    return updateScheduledNotification(input.id, {
+      tieu_de: input.tieu_de,
+      noi_dung: input.noi_dung,
+      thoi_gian_gui: input.thoi_gian_gui,
+      dia_diem: input.dia_diem,
+      loai_thong_bao: input.loai_thong_bao,
+    });
+  }
+
   const newNotification: ScheduledNotification = {
     id: `sched-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     tieu_de: input.tieu_de.trim(),
@@ -163,6 +177,7 @@ export async function saveScheduledNotification(input: {
     thoi_gian_gui: input.thoi_gian_gui,
     dia_diem: input.dia_diem?.trim() || undefined,
     trang_thai: 'pending',
+    loai_thong_bao: input.loai_thong_bao || 'LỊCH HỌP',
     created_at: new Date().toISOString(),
     nguoi_tao: input.nguoi_tao === 'yeunuhotranp7' ? 'Ban Quản trị' : (input.nguoi_tao || 'Ban Quản trị'),
   };
@@ -182,6 +197,9 @@ export async function saveScheduledNotification(input: {
       if (newNotification.dia_diem) {
         payloadVi.dia_diem = newNotification.dia_diem;
       }
+      if (newNotification.loai_thong_bao) {
+        payloadVi.loai_thong_bao = newNotification.loai_thong_bao;
+      }
 
       const { data, error } = await supabase
         .from('scheduled_notifications')
@@ -197,6 +215,7 @@ export async function saveScheduledNotification(input: {
           thoi_gian_gui: data.thoi_gian_gui || newNotification.thoi_gian_gui,
           dia_diem: data.dia_diem || newNotification.dia_diem,
           trang_thai: data.trang_thai || 'pending',
+          loai_thong_bao: data.loai_thong_bao || newNotification.loai_thong_bao,
           created_at: data.created_at || newNotification.created_at,
           nguoi_tao: newNotification.nguoi_tao,
         };
@@ -234,6 +253,7 @@ export async function saveScheduledNotification(input: {
             dia_diem: newNotification.dia_diem,
             thoi_gian_gui: fbData.thoi_gian_gui || newNotification.thoi_gian_gui,
             trang_thai: 'pending',
+            loai_thong_bao: newNotification.loai_thong_bao,
             created_at: fbData.created_at || newNotification.created_at,
             nguoi_tao: newNotification.nguoi_tao,
           };
@@ -350,6 +370,7 @@ export async function fetchScheduledNotifications(): Promise<ScheduledNotificati
 
 /**
  * Cập nhật thông báo hẹn giờ đã có (sửa trên Supabase và đồng bộ LocalStorage)
+ * Ghi đè trực tiếp theo id, không sinh thêm bản ghi trùng lặp
  */
 export async function updateScheduledNotification(
   id: string | number,
@@ -358,24 +379,28 @@ export async function updateScheduledNotification(
     noi_dung: string;
     thoi_gian_gui: string;
     dia_diem?: string;
+    loai_thong_bao?: string;
   }
 ): Promise<{ success: boolean; data?: ScheduledNotification; message: string }> {
-  const updatedItem: Partial<ScheduledNotification> = {
+  const safeId = String(id);
+  const updatedFields: Partial<ScheduledNotification> = {
     tieu_de: input.tieu_de.trim(),
     noi_dung: input.noi_dung.trim(),
     thoi_gian_gui: input.thoi_gian_gui,
     dia_diem: input.dia_diem?.trim() || undefined,
+    loai_thong_bao: input.loai_thong_bao || 'LỊCH HỌP',
+    trang_thai: 'pending', // Đặt về pending để sẵn sàng phát khi đến giờ hẹn mới
   };
 
-  // 1. Cập nhật LocalStorage cache
+  // 1. Cập nhật LocalStorage cache tại chỗ (thay thế hoàn toàn, không tạo bản ghi mới)
   try {
     const saved = localStorage.getItem(LOCAL_SCHEDULED_NOTIFS_KEY);
     const list: ScheduledNotification[] = saved ? JSON.parse(saved) : [];
-    const index = list.findIndex((x) => String(x.id) === String(id));
+    const index = list.findIndex((x) => String(x.id) === safeId);
     if (index >= 0) {
       list[index] = {
         ...list[index],
-        ...updatedItem,
+        ...updatedFields,
       };
       localStorage.setItem(LOCAL_SCHEDULED_NOTIFS_KEY, JSON.stringify(list));
     }
@@ -383,7 +408,7 @@ export async function updateScheduledNotification(
     console.error('[PushService] Lỗi cập nhật localStorage:', e);
   }
 
-  // 2. Cập nhật trên Supabase
+  // 2. Cập nhật trên Supabase theo id
   const supabase = getSupabase();
   if (supabase) {
     try {
@@ -391,17 +416,35 @@ export async function updateScheduledNotification(
         tieu_de: input.tieu_de.trim(),
         noi_dung: input.noi_dung.trim(),
         thoi_gian_gui: input.thoi_gian_gui,
+        trang_thai: 'pending',
       };
       if (input.dia_diem !== undefined) {
         payloadVi.dia_diem = input.dia_diem.trim();
       }
+      if (input.loai_thong_bao) {
+        payloadVi.loai_thong_bao = input.loai_thong_bao;
+      }
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('scheduled_notifications')
         .update(payloadVi)
         .eq('id', id)
         .select()
         .single();
+
+      // Nếu thất bại do kiểu id number/string, thử chuyển đổi
+      if (error && !isNaN(Number(id))) {
+        const retry = await supabase
+          .from('scheduled_notifications')
+          .update(payloadVi)
+          .eq('id', Number(id))
+          .select()
+          .single();
+        if (retry.data) {
+          data = retry.data;
+          error = null;
+        }
+      }
 
       if (!error && data) {
         const resultItem: ScheduledNotification = {
@@ -411,6 +454,7 @@ export async function updateScheduledNotification(
           thoi_gian_gui: data.thoi_gian_gui || input.thoi_gian_gui,
           dia_diem: data.dia_diem || input.dia_diem,
           trang_thai: data.trang_thai || 'pending',
+          loai_thong_bao: data.loai_thong_bao || input.loai_thong_bao || 'LỊCH HỌP',
           created_at: data.created_at || new Date().toISOString(),
           nguoi_tao: data.nguoi_tao || 'Ban Quản trị',
         };
@@ -418,18 +462,19 @@ export async function updateScheduledNotification(
         return {
           success: true,
           data: resultItem,
-          message: 'Đã cập nhật thông báo thành công trên Supabase!',
+          message: 'Đã cập nhật thay thế thông báo thành công trên Supabase!',
         };
       }
 
       if (error) {
-        console.warn('[PushService] Thử cập nhật không có dia_diem nếu cột chưa tồn tại:', error);
+        console.warn('[PushService] Thử cập nhật payload tối giản:', error);
         const fallbackPayload: any = {
           tieu_de: input.tieu_de.trim(),
           noi_dung: input.dia_diem
             ? `${input.noi_dung.trim()}\n(Địa điểm: ${input.dia_diem.trim()})`
             : input.noi_dung.trim(),
           thoi_gian_gui: input.thoi_gian_gui,
+          trang_thai: 'pending',
         };
         await supabase
           .from('scheduled_notifications')
@@ -443,28 +488,33 @@ export async function updateScheduledNotification(
 
   return {
     success: true,
-    message: 'Đã cập nhật thông báo thành công!',
+    message: 'Đã cập nhật thay thế thông báo thành công!',
   };
 }
 
 /**
- * Hủy hoặc xóa thông báo hẹn giờ
+ * Xóa 1 thông báo hẹn giờ khỏi hệ thống (Supabase & LocalStorage)
  */
 export async function deleteScheduledNotification(id: string | number): Promise<boolean> {
-  // Cập nhật LocalStorage ngay lập tức
+  const safeId = String(id);
+  // 1. Cập nhật LocalStorage ngay lập tức
   try {
     const saved = localStorage.getItem(LOCAL_SCHEDULED_NOTIFS_KEY);
     const list = saved ? JSON.parse(saved) : [];
-    const updated = (Array.isArray(list) ? list : []).filter((item: any) => String(item.id) !== String(id));
+    const updated = (Array.isArray(list) ? list : []).filter((item: any) => String(item.id) !== safeId);
     localStorage.setItem(LOCAL_SCHEDULED_NOTIFS_KEY, JSON.stringify(updated));
   } catch (e) {
     console.error('[PushService] Lỗi cập nhật localStorage:', e);
   }
 
+  // 2. Xóa triệt để trên Supabase
   const supabase = getSupabase();
   if (supabase) {
     try {
-      await supabase.from('scheduled_notifications').delete().eq('id', id);
+      const { error } = await supabase.from('scheduled_notifications').delete().eq('id', id);
+      if (error && !isNaN(Number(id))) {
+        await supabase.from('scheduled_notifications').delete().eq('id', Number(id));
+      }
     } catch (e) {
       console.warn('[PushService] Lỗi xóa trên Supabase:', e);
     }
@@ -474,14 +524,53 @@ export async function deleteScheduledNotification(id: string | number): Promise<
 }
 
 /**
- * Lưu 1 bản ghi vào local cache
+ * Xóa toàn bộ lịch thông báo trong bảng scheduled_notifications trên Supabase và làm sạch bộ nhớ
+ */
+export async function clearAllScheduledNotifications(): Promise<{ success: boolean; message: string }> {
+  // 1. Dọn sạch LocalStorage
+  try {
+    localStorage.setItem(LOCAL_SCHEDULED_NOTIFS_KEY, JSON.stringify([]));
+  } catch (e) {
+    console.error('[PushService] Lỗi xóa cache local:', e);
+  }
+
+  // 2. Gửi lệnh xóa toàn bộ bản ghi trên Supabase
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      // PostgREST yêu cầu bộ lọc khi gọi DELETE, sử dụng lọc neq giá trị ảo
+      const { error } = await supabase
+        .from('scheduled_notifications')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (error) {
+        console.warn('[PushService] Lỗi delete neq, thử lọc theo created_at:', error);
+        await supabase
+          .from('scheduled_notifications')
+          .delete()
+          .gte('created_at', '1970-01-01');
+      }
+    } catch (e) {
+      console.warn('[PushService] Lỗi xóa toàn bộ trên Supabase:', e);
+    }
+  }
+
+  return {
+    success: true,
+    message: 'Đã xóa toàn bộ lịch thông báo trong hệ thống!',
+  };
+}
+
+/**
+ * Lưu 1 bản ghi vào local cache (thay thế nếu đã có cùng id, tránh sinh trùng lặp)
  */
 function saveScheduledToLocalCache(item: ScheduledNotification) {
   try {
     const saved = localStorage.getItem(LOCAL_SCHEDULED_NOTIFS_KEY);
     const list: ScheduledNotification[] = saved ? JSON.parse(saved) : [];
-    // Kiểm tra xem đã tồn tại chưa để thay thế hoặc chèn mới
-    const index = list.findIndex((x) => x.id === item.id);
+    // So sánh chuẩn chuỗi để tránh lệch kiểu number vs string
+    const index = list.findIndex((x) => String(x.id) === String(item.id));
     if (index >= 0) {
       list[index] = item;
     } else {
@@ -491,6 +580,103 @@ function saveScheduledToLocalCache(item: ScheduledNotification) {
   } catch (e) {
     console.error(e);
   }
+}
+
+// Tập hợp ID đã được kích hoạt phát tự động để chống gửi trùng lặp
+const triggeredNotificationIds = new Set<string>();
+
+/**
+ * Quét các thông báo hẹn giờ đến hạn (now >= thoi_gian_gui) và chưa phát (trang_thai !== 'sent').
+ * Khi đến đúng giờ hẹn:
+ * 1. Lập tức kích hoạt phát Web Push Notification rung/chuông đến toàn bộ thiết bị trong push_subscribers.
+ * 2. Tự động chuyển trạng thái bản ghi từ pending sang sent (✓ Đã phát).
+ * 3. Kích hoạt Chấm đỏ thông báo (Red Badge) trên thanh menu cho người dùng.
+ */
+export async function checkAndTriggerDueNotifications(
+  onNotificationTriggered?: (notif: ScheduledNotification) => void
+): Promise<number> {
+  try {
+    const list = await fetchScheduledNotifications();
+    const now = Date.now();
+    let triggeredCount = 0;
+
+    for (const notif of list) {
+      const safeId = String(notif.id);
+      // Bỏ qua nếu đã gửi hoặc vừa mới được kích hoạt trong phiên này
+      if (notif.trang_thai === 'sent' || triggeredNotificationIds.has(safeId)) {
+        continue;
+      }
+
+      if (!notif.thoi_gian_gui) continue;
+
+      const scheduledTime = new Date(notif.thoi_gian_gui).getTime();
+      if (isNaN(scheduledTime)) continue;
+
+      // Đến đúng giờ hẹn (cho phép sai số 24 giờ gần nhất, không phát lại tin cũ hơn 1 ngày)
+      const diffMs = now - scheduledTime;
+      if (diffMs >= 0 && diffMs < 24 * 60 * 60 * 1000) {
+        triggeredNotificationIds.add(safeId);
+        console.log(`[Scheduler] 🔔 Đến đúng giờ hẹn phát thông báo: "${notif.tieu_de}" (${notif.thoi_gian_gui})`);
+
+        // Kích hoạt phát tức thì tới toàn bộ thiết bị và cập nhật sang sent
+        await broadcastToAllDevices({
+          id: notif.id,
+          tieu_de: notif.tieu_de,
+          noi_dung: notif.noi_dung || '',
+          dia_diem: notif.dia_diem || '',
+          thoi_gian_gui: notif.thoi_gian_gui,
+          loai_thong_bao: notif.loai_thong_bao || 'LỊCH HỌP'
+        });
+
+        triggeredCount++;
+        if (onNotificationTriggered) {
+          onNotificationTriggered(notif);
+        }
+      }
+    }
+
+    return triggeredCount;
+  } catch (err) {
+    console.warn('[Scheduler] Lỗi khi quét lịch hẹn thông báo:', err);
+    return 0;
+  }
+}
+
+let schedulerTimerId: any = null;
+
+/**
+ * Khởi động bộ quét định kỳ (Background Scheduler) mỗi 15 - 30 giây (mặc định 20 giây)
+ */
+export function startNotificationBackgroundScheduler(
+  onNotificationTriggered?: (notif: ScheduledNotification) => void
+): () => void {
+  if (schedulerTimerId) {
+    return () => {
+      if (schedulerTimerId) {
+        clearInterval(schedulerTimerId);
+        schedulerTimerId = null;
+      }
+    };
+  }
+
+  // Quét nhanh sau 2 giây khi ứng dụng mở
+  setTimeout(() => {
+    checkAndTriggerDueNotifications(onNotificationTriggered);
+  }, 2000);
+
+  // Quét định kỳ mỗi 20 giây (trong khoảng 15 - 30 giây)
+  schedulerTimerId = setInterval(() => {
+    checkAndTriggerDueNotifications(onNotificationTriggered);
+  }, 20000);
+
+  console.log('[Scheduler] Đã kích hoạt Bộ đếm tự động phát thông báo hẹn giờ định kỳ (mỗi 20s)');
+
+  return () => {
+    if (schedulerTimerId) {
+      clearInterval(schedulerTimerId);
+      schedulerTimerId = null;
+    }
+  };
 }
 
 /**

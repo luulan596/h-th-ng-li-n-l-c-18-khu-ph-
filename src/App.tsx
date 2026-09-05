@@ -20,6 +20,7 @@ import {
   fetchAllHeadquarters,
   fetchAllRedSites,
   registerPushSubscriber,
+  startNotificationBackgroundScheduler,
   VAPID_PUBLIC_KEY,
   urlBase64ToUint8Array
 } from './services';
@@ -193,13 +194,22 @@ export default function App() {
     }
   };
 
-  // Auto-sync Push Subscription if permission is already granted
+  // Auto-sync Push Subscription if permission is already granted & Start Background Scheduler
   useEffect(() => {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       registerPushSubscriber().catch(err => {
         console.warn('[Push] Auto-sync subscription error:', err);
       });
     }
+
+    // Kích hoạt Bộ đếm tự động phát tức thì (Background Scheduler quét mỗi 15 - 30 giây)
+    const stopScheduler = startNotificationBackgroundScheduler((notif) => {
+      console.log('[App] Bộ đếm tự động phát tức thì đã kích hoạt thông báo:', notif.tieu_de);
+    });
+
+    return () => {
+      if (stopScheduler) stopScheduler();
+    };
   }, []);
 
   const handleEnableNotification = async () => {
