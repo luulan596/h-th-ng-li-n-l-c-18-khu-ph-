@@ -4,14 +4,15 @@ import { Landmark, MapPin, Navigation, Image as ImageIcon, RotateCcw, Plus, X } 
 import { getGoogleMapsDirLink } from '../utils/helpers';
 import { RedAddressDetailModal } from './RedAddressDetailModal';
 
-// Helper to format image URL (supports Google Drive share links)
-export const formatImageUrl = (url?: string) => {
-  if (!url) return '/pham-van-chi (1).png';
-  if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
-    const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (fileIdMatch && fileIdMatch[1]) {
-      return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
-    }
+// Helper to format image URL - eliminate external links and ensure standardized local paths
+export const formatImageUrl = (url?: string, siteIdentifier?: string) => {
+  if (!url || url.includes('unsplash.com') || url.includes('drive.google.com') || url.includes('docs.google.com')) {
+    const candidates = getFallbackImageCandidates(siteIdentifier || url);
+    return candidates[0] || '/pham-van-chi%20(1).png';
+  }
+  // Standardize space to %20 if pointing to local public image with spaces
+  if (url.startsWith('/') && url.includes(' ')) {
+    return url.replace(/ /g, '%20');
   }
   return url;
 };
@@ -21,6 +22,7 @@ export const getFallbackImageCandidates = (siteOrUrl?: string): string[] => {
   const query = (siteOrUrl || '').toLowerCase();
   if (query.includes('pham-van-chi') || query.includes('phạm văn chí') || query.includes('bình hòa')) {
     return [
+      '/pham-van-chi%20(1).png',
       '/pham-van-chi (1).png',
       '/pham-van-chi.png',
       '/pham-van-chi.jpg',
@@ -28,6 +30,7 @@ export const getFallbackImageCandidates = (siteOrUrl?: string): string[] => {
   }
   if (query.includes('nguoi-hoa') || query.includes('người hoa') || query.includes('lưu vinh')) {
     return [
+      '/nha-truyen-thong-nguoi-hoa%20(1).png',
       '/nha-truyen-thong-nguoi-hoa (1).png',
       '/nha-truyen-thong-nguoi-hoa.png',
       '/nha-truyen-thong-nguoi-hoa.jpg',
@@ -35,12 +38,18 @@ export const getFallbackImageCandidates = (siteOrUrl?: string): string[] => {
   }
   if (query.includes('hoa-van') || query.includes('hoa vận') || query.includes('gia phú') || query.includes('hầm in')) {
     return [
+      '/ham-in-hoa-van%20(1).png',
       '/ham-in-hoa-van (1).png',
       '/ham-in-hoa-van.png',
       '/ham-in-hoa-van.jpg',
     ];
   }
-  return ['/pham-van-chi (1).png', '/pham-van-chi.png', '/pham-van-chi.jpg'];
+  return [
+    '/pham-van-chi%20(1).png',
+    '/pham-van-chi (1).png',
+    '/pham-van-chi.png',
+    '/pham-van-chi.jpg',
+  ];
 };
 
 // Automatically fallback to alternative public paths on error
@@ -110,8 +119,8 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
       address: newAddress.trim() || 'Phường Bình Tiên, TP.HCM',
       summary: newSummary.trim() || 'Địa chỉ đỏ lưu giữ truyền thống lịch sử văn hóa.',
       detailedHistory: newHistory.trim() || newSummary.trim(),
-      imageUrl: newImageUrl.trim() || '/pham-van-chi (1).png',
-      galleryImages: newImageUrl.trim() ? [newImageUrl.trim()] : ['/pham-van-chi (1).png'],
+      imageUrl: newImageUrl.trim() || '/pham-van-chi%20(1).png',
+      galleryImages: newImageUrl.trim() ? [newImageUrl.trim()] : ['/pham-van-chi%20(1).png'],
       toaDo: {
         lat: parseFloat(newLat) || 10.74825,
         lng: parseFloat(newLng) || 106.63910,
@@ -203,7 +212,7 @@ export const RedAddressesView: React.FC<RedAddressesViewProps> = ({
                   onClick={() => handleOpenPopup(site, 'OVERVIEW')}
                 >
                   <img
-                    src={formatImageUrl(site.imageUrl)}
+                    src={formatImageUrl(site.imageUrl, site.name)}
                     alt={site.name}
                     loading="eager"
                     fetchPriority="high"

@@ -53,8 +53,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const hasActiveFilters = Boolean(
     filters.searchQuery ||
     filters.selectedKhuPho !== 'ALL' ||
+    filters.selectedChucDanh !== 'ALL' ||
     (filters.selectedGender && filters.selectedGender !== 'ALL') ||
-    filters.selectedDoanThe !== 'ALL'
+    filters.selectedDoanThe !== 'ALL' ||
+    filters.onlyCapUy
   );
 
   return (

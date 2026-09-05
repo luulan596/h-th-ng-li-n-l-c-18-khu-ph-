@@ -23,19 +23,73 @@ export function removeVietnameseTones(input: any): string {
 
 export function isChuyenVien(p: Personnel): boolean {
   if (!p) return false;
-  const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase().trim();
-  const cdk = removeVietnameseTones(p.chucDanhKhac || '').toLowerCase().trim();
+  const cdRaw = String((p as any).chuc_danh_mat_tran || p.chucDanhMatTran || '').toLowerCase().trim();
+  const cdkRaw = String((p as any).chuc_danh_khac || p.chucDanhKhac || '').toLowerCase().trim();
   const id = String(p.id || '').toLowerCase();
   
   if (id.startsWith('cv-')) return true;
+  if (cdRaw.includes('chuyên viên') || cdkRaw.includes('chuyên viên')) return true;
+  
+  const cd = removeVietnameseTones(cdRaw);
+  const cdk = removeVietnameseTones(cdkRaw);
   return cd.includes('chuyen vien') || cdk.includes('chuyen vien');
 }
 
 export function isBanThuongTruc(p: Personnel): boolean {
+  if (!p) return false;
   if (isChuyenVien(p)) return false;
-  if (String(p.khuPho || '') === 'Ban Thường trực' || String(p.id || '').startsWith('btt-')) return true;
-  const cd = removeVietnameseTones(p.chucDanhMatTran || '').toLowerCase();
-  return cd.includes('chu tich') || cd.includes('thuong truc');
+
+  const cdRaw = String((p as any).chuc_danh_mat_tran || p.chucDanhMatTran || '').toLowerCase().trim();
+  const cdNoTone = removeVietnameseTones(cdRaw);
+
+  // 1. Chức danh Mặt trận chứa 'Chủ tịch' hoặc 'Phó Chủ tịch'
+  if (
+    cdRaw.includes('chủ tịch') ||
+    cdRaw.includes('phó chủ tịch') ||
+    cdNoTone.includes('chu tich') ||
+    cdNoTone.includes('pho chu tich') ||
+    cdNoTone.includes('thuong truc')
+  ) {
+    return true;
+  }
+
+  // 2. Hoặc khu_pho === null (hoặc rỗng, undefined, 'Ban Thường trực') && !chuc_danh_mat_tran.includes('Chuyên viên')
+  const kp = (p as any).khu_pho !== undefined ? (p as any).khu_pho : p.khuPho;
+  const isKhuPhoNull = kp === null || kp === undefined || kp === '' || kp === 'Ban Thường trực';
+  if (isKhuPhoNull && !cdRaw.includes('chuyên viên') && !cdNoTone.includes('chuyen vien')) {
+    return true;
+  }
+
+  if (String(p.khuPho || '') === 'Ban Thường trực' || String(p.id || '').startsWith('btt-')) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Định dạng chức danh hiển thị:
+ * Nếu có đồng thời cả chuc_danh_mat_tran và chuc_danh_khac: {chuc_danh_mat_tran} - {chuc_danh_khac}
+ * Nếu chuc_danh_khac để trống hoặc NULL: chỉ hiển thị nguyên bản chuc_danh_mat_tran
+ */
+export function getCombinedRole(p: Personnel): string {
+  if (!p) return 'Thành viên';
+  const cdMatTranRaw = String((p as any).chuc_danh_mat_tran || p.chucDanhMatTran || '').trim();
+  const cdKhacRaw = String((p as any).chuc_danh_khac || p.chucDanhKhac || '').trim();
+
+  let baseMatTran = cdMatTranRaw;
+  if (baseMatTran.toUpperCase() === 'TRƯỞNG BAN') baseMatTran = 'Trưởng ban';
+  else if (baseMatTran.toUpperCase() === 'PHÓ TRƯỞNG BAN') baseMatTran = 'Phó Trưởng ban';
+  else if (!baseMatTran) baseMatTran = isPartyOfficial(p) ? (cdKhacRaw || 'Đại diện Cấp ủy Chi bộ') : 'Thành viên';
+
+  if (cdKhacRaw && cdKhacRaw !== 'null' && cdKhacRaw !== 'undefined') {
+    if (baseMatTran.toLowerCase() === cdKhacRaw.toLowerCase()) {
+      return baseMatTran;
+    }
+    return `${baseMatTran} - ${cdKhacRaw}`;
+  }
+
+  return baseMatTran;
 }
 
 export function isKeyLeader(p: Personnel): boolean {

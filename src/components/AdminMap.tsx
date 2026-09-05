@@ -1,8 +1,39 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Headquarters, RedSite } from '../types';
 import { Navigation, MapPin, Phone, User, Landmark, ChevronDown } from 'lucide-react';
 import { formatPhoneNumber } from '../utils/helpers';
+
+// Safe monkey-patch for Leaflet DomUtil to prevent "Cannot read properties of undefined (reading '_leaflet_pos')"
+if (typeof window !== 'undefined' && L && L.DomUtil) {
+  const originalGetPosition = L.DomUtil.getPosition;
+  L.DomUtil.getPosition = function (el: any) {
+    if (!el || typeof el !== 'object') {
+      return new L.Point(0, 0);
+    }
+    try {
+      return originalGetPosition ? originalGetPosition(el) : (el._leaflet_pos || new L.Point(0, 0));
+    } catch {
+      return new L.Point(0, 0);
+    }
+  };
+
+  const originalSetPosition = L.DomUtil.setPosition;
+  L.DomUtil.setPosition = function (el: any, point: any) {
+    if (!el || typeof el !== 'object') {
+      return;
+    }
+    try {
+      if (originalSetPosition) {
+        originalSetPosition(el, point);
+      } else {
+        el._leaflet_pos = point;
+      }
+    } catch {
+      // ignore detached node errors
+    }
+  };
+}
 
 interface AdminMapProps {
   headquartersList: Headquarters[];
@@ -23,39 +54,43 @@ export const AdminMap: React.FC<AdminMapProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   // Convert red sites to Headquarters-compatible structure
-  const redSiteHqs: Headquarters[] = redSitesList.map((site) => ({
-    id: site.id,
-    tenTruSo: `🚩 ${site.name}`,
-    loaiTruSo: 'RED_SITE' as any,
-    diaChi: site.address,
-    soDienThoai: '',
-    gioLamViec: site.openHours || 'Tất cả các ngày trong tuần',
-    canBoPhuTrach: site.category || 'Ban Quản lý Di tích',
-    chucVuCanBo: 'Phụ trách',
-    toaDo: site.toaDo,
-    moTaChucNang: site.summary,
-  }));
+  const redSiteHqs: Headquarters[] = useMemo(() => {
+    return redSitesList.map((site) => ({
+      id: site.id,
+      tenTruSo: `🚩 ${site.name}`,
+      loaiTruSo: 'RED_SITE' as any,
+      diaChi: site.address,
+      soDienThoai: '',
+      gioLamViec: site.openHours || 'Tất cả các ngày trong tuần',
+      canBoPhuTrach: site.category || 'Ban Quản lý Di tích',
+      chucVuCanBo: 'Phụ trách',
+      toaDo: site.toaDo || { lat: 10.7485, lng: 106.6521 },
+      moTaChucNang: site.summary,
+    }));
+  }, [redSitesList]);
 
   // Filtered lists for counts and dropdowns
-  const govList = headquartersList.filter((hq) => 
-    hq.loaiTruSo === 'CO_QUAN' || 
-    ['CA', 'MTTQ', 'QS', 'TYT', 'UBND'].includes(String(hq.ma_tru_so || '').toUpperCase()) ||
-    (!hq.khuPhoThuocVong && hq.loaiTruSo !== 'RED_SITE' as any)
-  );
+  const govList = useMemo(() => {
+    return headquartersList.filter((hq) => 
+      hq.loaiTruSo === 'CO_QUAN' || 
+      ['CA', 'MTTQ', 'QS', 'TYT', 'UBND'].includes(String(hq.ma_tru_so || '').toUpperCase()) ||
+      (!hq.khuPhoThuocVong && (hq.loaiTruSo as string) !== 'RED_SITE')
+    );
+  }, [headquartersList]);
   
   const govCount = govList.length;
-  const kpList = headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho');
+  const kpList = useMemo(() => headquartersList.filter((hq) => hq.loaiTruSo === 'khu_pho'), [headquartersList]);
   const kpCount = kpList.length;
   const totalCount = govCount + kpCount + redSitesList.length;
 
   // Filtered list for map rendering
-  const filteredList = (() => {
+  const filteredList = useMemo(() => {
     if (selectedCategory === 'ALL') return [...govList, ...kpList, ...redSiteHqs];
     if (selectedCategory === 'GOVERNMENT') return govList;
     if (selectedCategory === 'KHU_PHO') return kpList;
     if (selectedCategory === 'RED_SITES') return redSiteHqs;
     return headquartersList.filter((hq) => hq.loaiTruSo === selectedCategory);
-  })();
+  }, [selectedCategory, govList, kpList, redSiteHqs, headquartersList]);
 
   // Original Custom Icons
   const createCustomIcon = (hq: Headquarters, isSelected: boolean) => {
@@ -116,10 +151,10 @@ export const AdminMap: React.FC<AdminMapProps> = ({
     });
   };
 
+  // 1. Initialize Map instance once
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // 1. Initialize map if not already created
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
         center: [10.7485, 106.6521], // Center of Ward Binh Tien
@@ -127,71 +162,112 @@ export const AdminMap: React.FC<AdminMapProps> = ({
         zoomControl: true,
       });
 
-      // 2. Standard OpenStreetMap Tile Layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
         subdomains: ['a', 'b', 'c']
       }).addTo(map);
 
-      // 3. Initial invalidateSize call to ensure proper rendering
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 500);
-
       mapInstanceRef.current = map;
-    }
 
+      const timer = setTimeout(() => {
+        try {
+          map.invalidateSize();
+        } catch { /* ignore */ }
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // 2. Render Markers for filtered locations (only when filteredList changes)
+  useEffect(() => {
     const map = mapInstanceRef.current;
-    
-    // Clear existing markers before re-rendering
-    Object.values(markersRef.current).forEach((marker: L.Marker) => marker.remove());
+    if (!map) return;
+
+    // Stop active flyTo/zoom animation to prevent accessing removed nodes
+    try {
+      map.stop();
+    } catch { /* ignore */ }
+
+    // Clear existing markers safely
+    Object.values(markersRef.current).forEach((marker: L.Marker) => {
+      try {
+        marker.off();
+        marker.remove();
+      } catch { /* ignore */ }
+    });
     markersRef.current = {};
 
     const bounds = L.latLngBounds([]);
 
-    // 4. Add markers for filtered locations
     filteredList.forEach((hq) => {
+      if (!hq.toaDo || typeof hq.toaDo.lat !== 'number' || typeof hq.toaDo.lng !== 'number') return;
       const isSelected = selectedHq?.id === hq.id;
       const icon = createCustomIcon(hq, isSelected);
 
-      const marker = L.marker([hq.toaDo.lat, hq.toaDo.lng], { icon }).addTo(map);
+      const marker = L.marker([hq.toaDo.lat, hq.toaDo.lng], { 
+        icon,
+        zIndexOffset: isSelected ? 1000 : 0
+      }).addTo(map);
 
       marker.on('click', () => {
         setSelectedHq(hq);
-        map.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 0.8 });
       });
 
       bounds.extend([hq.toaDo.lat, hq.toaDo.lng]);
       markersRef.current[hq.id] = marker;
     });
 
-    // 5. Fit bounds if showing a filtered set (but no specific HQ selected)
     if (bounds.isValid() && filteredList.length > 0 && !selectedHq) {
-      map.fitBounds(bounds, { padding: [35, 35], maxZoom: 17 });
+      try {
+        map.fitBounds(bounds, { padding: [35, 35], maxZoom: 17 });
+      } catch { /* ignore */ }
     }
 
-    // Always invalidate size on list changes
-    map.invalidateSize();
+    try {
+      map.invalidateSize();
+    } catch { /* ignore */ }
+  }, [filteredList]);
 
-    // Cleanup function to prevent memory leaks
-    return () => {
-      // We don't remove the map instance here to keep it alive for tab switching 
-      // but we ensure it's resized correctly
-    };
-  }, [filteredList, selectedHq?.id]);
+  // 3. Highlight selected marker in-place & fly to location without recreating markers
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
 
-  // Handle unmount - absolute cleanup
+    // Update icons for all markers smoothly
+    filteredList.forEach((hq) => {
+      const marker = markersRef.current[hq.id];
+      if (marker) {
+        const isSelected = selectedHq?.id === hq.id;
+        try {
+          marker.setIcon(createCustomIcon(hq, isSelected));
+          marker.setZIndexOffset(isSelected ? 1000 : 0);
+        } catch { /* ignore */ }
+      }
+    });
+
+    if (selectedHq?.toaDo && typeof selectedHq.toaDo.lat === 'number' && typeof selectedHq.toaDo.lng === 'number') {
+      try {
+        map.flyTo([selectedHq.toaDo.lat, selectedHq.toaDo.lng], 17, { duration: 0.8 });
+      } catch { /* ignore */ }
+    }
+  }, [selectedHq?.id]);
+
+  // 4. Handle unmount - absolute cleanup
   useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.stop();
+          mapInstanceRef.current.remove();
+        } catch { /* ignore */ }
         mapInstanceRef.current = null;
       }
     };
   }, []);
 
-  // Sync with external Khu phố filter
+  // 5. Sync with external Khu phố filter
   useEffect(() => {
     if (!mapInstanceRef.current || !selectedKhuPhoFilter || selectedKhuPhoFilter === 'ALL') return;
     
@@ -202,13 +278,19 @@ export const AdminMap: React.FC<AdminMapProps> = ({
     
     if (hq) {
       setSelectedHq(hq);
-      mapInstanceRef.current.flyTo([hq.toaDo.lat, hq.toaDo.lng], 17, { duration: 1.2 });
     }
   }, [selectedKhuPhoFilter, headquartersList]);
 
+  // 6. Responsive resize observer
   useEffect(() => {
-    if (!mapContainerRef.current || !mapInstanceRef.current) return;
-    const observer = new ResizeObserver(() => mapInstanceRef.current?.invalidateSize());
+    if (!mapContainerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.invalidateSize();
+        } catch { /* ignore */ }
+      }
+    });
     observer.observe(mapContainerRef.current);
     return () => observer.disconnect();
   }, []);
@@ -300,7 +382,11 @@ export const AdminMap: React.FC<AdminMapProps> = ({
                   setSelectedHq(null);
                   if (govList.length > 0) {
                     const bounds = L.latLngBounds(govList.map(h => [h.toaDo.lat, h.toaDo.lng]));
-                    mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                    if (bounds.isValid()) {
+                      try {
+                        mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                      } catch { /* ignore */ }
+                    }
                   }
                 } else {
                   const hq = govList.find(h => h.id === val);
@@ -335,7 +421,11 @@ export const AdminMap: React.FC<AdminMapProps> = ({
                   setSelectedHq(null);
                   if (kpList.length > 0) {
                     const bounds = L.latLngBounds(kpList.map(h => [h.toaDo.lat, h.toaDo.lng]));
-                    mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                    if (bounds.isValid()) {
+                      try {
+                        mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                      } catch { /* ignore */ }
+                    }
                   }
                 } else {
                   const hq = kpList.find(h => h.id === val);
@@ -370,7 +460,11 @@ export const AdminMap: React.FC<AdminMapProps> = ({
                   setSelectedHq(null);
                   if (redSiteHqs.length > 0) {
                     const bounds = L.latLngBounds(redSiteHqs.map(h => [h.toaDo.lat, h.toaDo.lng]));
-                    mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                    if (bounds.isValid()) {
+                      try {
+                        mapInstanceRef.current?.fitBounds(bounds, { padding: [40, 40] });
+                      } catch { /* ignore */ }
+                    }
                   }
                 } else {
                   const hq = redSiteHqs.find(h => h.id === val);

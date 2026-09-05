@@ -10,6 +10,7 @@
 import React, { useState } from 'react';
 import { Personnel, FilterState, SyncStatus } from '../types';
 import { FilterBar } from './FilterBar';
+import { StatsOverview } from './StatsOverview';
 import { PersonnelCard } from './PersonnelCard';
 import { PersonnelTable } from './PersonnelTable';
 import { QuickCallModal } from './QuickCallModal';
@@ -150,12 +151,112 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({
         </div>
       </div>
 
+      {/* Thống kê nhanh cấp cao & Lọc vai trò cán bộ */}
+      <StatsOverview
+        personnelList={personnelList}
+        currentFilterType={
+          filters.selectedChucDanh === 'Chuyên viên' || filters.selectedDoanThe === 'CHUYEN_VIEN'
+            ? 'CHUYEN_VIEN'
+            : filters.selectedDoanThe === 'BAN_THUONG_TRUC'
+            ? 'BTT'
+            : filters.selectedChucDanh === 'Trưởng ban'
+            ? 'TRUONG_BAN'
+            : filters.selectedChucDanh === 'Phó Trưởng ban'
+            ? 'PHO_BAN'
+            : filters.onlyCapUy
+            ? 'CAP_UY'
+            : 'ALL'
+        }
+        onSelectQuickFilter={(type) => {
+          if (type === 'ALL') {
+            setFilters(prev => ({ ...prev, searchQuery: '', selectedKhuPho: 'ALL', selectedChucDanh: 'ALL', selectedDoanThe: 'ALL', onlyCapUy: false }));
+          } else if (type === 'CHUYEN_VIEN') {
+            setFilters(prev => ({
+              ...prev,
+              searchQuery: '',
+              selectedKhuPho: 'ALL',
+              selectedDoanThe: 'ALL',
+              selectedChucDanh: prev.selectedChucDanh === 'Chuyên viên' ? 'ALL' : 'Chuyên viên',
+              onlyCapUy: false,
+            }));
+          } else if (type === 'BTT') {
+            setFilters(prev => ({
+              ...prev,
+              searchQuery: '',
+              selectedKhuPho: 'ALL',
+              selectedDoanThe: prev.selectedDoanThe === 'BAN_THUONG_TRUC' ? 'ALL' : 'BAN_THUONG_TRUC',
+              selectedChucDanh: 'ALL',
+              onlyCapUy: false,
+            }));
+          } else if (type === 'TRUONG_BAN') {
+            setFilters(prev => ({
+              ...prev,
+              searchQuery: '',
+              selectedKhuPho: 'ALL',
+              selectedDoanThe: 'ALL',
+              selectedChucDanh: prev.selectedChucDanh === 'Trưởng ban' ? 'ALL' : 'Trưởng ban',
+              onlyCapUy: false,
+            }));
+          } else if (type === 'PHO_BAN') {
+            setFilters(prev => ({
+              ...prev,
+              searchQuery: '',
+              selectedKhuPho: 'ALL',
+              selectedDoanThe: 'ALL',
+              selectedChucDanh: prev.selectedChucDanh === 'Phó Trưởng ban' ? 'ALL' : 'Phó Trưởng ban',
+              onlyCapUy: false,
+            }));
+          } else if (type === 'CAP_UY') {
+            setFilters(prev => ({
+              ...prev,
+              searchQuery: '',
+              selectedKhuPho: 'ALL',
+              selectedDoanThe: 'ALL',
+              selectedChucDanh: 'ALL',
+              onlyCapUy: !prev.onlyCapUy,
+            }));
+          }
+        }}
+      />
+
       {/* Thanh tìm kiếm và bộ lọc nâng cao */}
       <FilterBar
         filters={filters}
-        setFilters={setFilters}
-        totalCount={filteredPersonnelList.length}
+        onFilterChange={(newF) => {
+          setFilters((prev) => {
+            const updated = { ...prev, ...newF };
+            if (newF.searchQuery !== undefined && newF.searchQuery.trim() !== '') {
+              updated.selectedKhuPho = 'ALL';
+              updated.selectedDoanThe = 'ALL';
+              updated.selectedChucDanh = 'ALL';
+              updated.onlyCapUy = false;
+              updated.selectedGender = 'ALL';
+            }
+            if (newF.selectedKhuPho !== undefined || 
+                newF.selectedDoanThe !== undefined || 
+                newF.selectedChucDanh !== undefined || 
+                newF.selectedGender !== undefined ||
+                newF.onlyCapUy !== undefined) {
+              updated.searchQuery = '';
+            }
+            return updated;
+          });
+        }}
+        onResetFilters={() => {
+          setFilters({
+            searchQuery: '',
+            selectedKhuPho: 'ALL',
+            selectedDoanThe: 'ALL',
+            selectedChucDanh: 'ALL',
+            selectedGender: 'ALL',
+            onlyCapUy: false,
+            sortBy: 'stt',
+          });
+        }}
+        totalFiltered={filteredPersonnelList.length}
+        totalCount={personnelList.length}
         availableKhuPhoList={availableKhuPhoList}
+        personnelList={personnelList}
       />
 
       {/* Khu vực hiển thị danh sách (Thẻ hoặc Bảng) */}

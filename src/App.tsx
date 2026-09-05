@@ -26,7 +26,7 @@ import {
 
 import { Personnel, FilterState, SyncStatus, Headquarters, RedSite, TabType } from './types';
 import { INITIAL_PERSONNEL_DATA, BAN_THUONG_TRUC_DATA, ADMINISTRATIVE_HEADQUARTERS, INITIAL_RED_SITES_DATA } from './data/initialData';
-import { isBanThuongTruc, isKeyLeader, isDeputyLeader, isThanhVien, isPartyOfficial, removeVietnameseTones } from './utils/helpers';
+import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isThanhVien, isPartyOfficial, removeVietnameseTones } from './utils/helpers';
 import { Grid, Table, Plus, Download, RefreshCw, Database, MapPin, Users, Landmark, FileSpreadsheet, RotateCcw, Mail, BarChart3, Bell } from 'lucide-react';
 
 export default function App() {
@@ -96,7 +96,7 @@ export default function App() {
 
   // --- Red Sites State ---
   const [redSitesList, setRedSitesList] = useState<RedSite[]>(() => {
-    const saved = localStorage.getItem('mt_red_sites_data_v7') || localStorage.getItem('mt_red_sites_data_v6');
+    const saved = localStorage.getItem('mt_red_sites_data_v8') || localStorage.getItem('mt_red_sites_data_v7') || localStorage.getItem('mt_red_sites_data_v6');
     if (saved) {
       try {
         const parsed: RedSite[] = JSON.parse(saved);
@@ -111,7 +111,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem('mt_red_sites_data_v7', JSON.stringify(redSitesList));
+    localStorage.setItem('mt_red_sites_data_v8', JSON.stringify(redSitesList));
   }, [redSitesList]);
 
   // --- Filter State ---
@@ -354,6 +354,56 @@ export default function App() {
   // Fast Client-Side Memoized Filtering Logic
   const filteredPersonnelList = useMemo(() => {
     return personnelList.filter((p) => {
+      // 0. BỘ LỌC CHUYÊN VIÊN: Khi bấm nút CHUYÊN VIÊN (selectedChucDanh === 'Chuyên viên' hoặc selectedDoanThe === 'CHUYEN_VIEN')
+      const isFilterChuyenVien = filters.selectedChucDanh === 'Chuyên viên' || filters.selectedDoanThe === 'CHUYEN_VIEN';
+      if (isFilterChuyenVien) {
+        const cdRaw = String((p as any).chuc_danh_mat_tran || p.chucDanhMatTran || '');
+        const cdkRaw = String((p as any).chuc_danh_khac || p.chucDanhKhac || '');
+        const isCV = cdRaw.toLowerCase().includes('chuyên viên') ||
+                     cdRaw.toLowerCase().includes('chuyen vien') ||
+                     cdkRaw.toLowerCase().includes('chuyên viên') ||
+                     cdkRaw.toLowerCase().includes('chuyen vien') ||
+                     isChuyenVien(p) ||
+                     String(p.id || '').startsWith('cv-');
+
+        if (!isCV) return false;
+
+        // Bỏ qua điều kiện lọc Khu phố/Ngành đoàn thể (không ép khu_pho !== null)
+        // Nếu có tìm kiếm thì lọc tiếp theo ô tìm kiếm
+        if (filters.searchQuery.trim()) {
+          const rawQ = filters.searchQuery.trim();
+          const query = removeVietnameseTones(rawQ).toLowerCase();
+          const nameClean = removeVietnameseTones(p.hoTen).toLowerCase();
+          const phoneClean = String(p.soDienThoai || '').replace(/\D/g, '');
+          const queryDigits = query.replace(/\D/g, '');
+          const matchName = nameClean.includes(query);
+          const matchPhone = queryDigits.length >= 3 && phoneClean.includes(queryDigits);
+          if (!matchName && !matchPhone) return false;
+        }
+
+        return true;
+      }
+
+      // 0b. BỘ LỌC THƯỜNG TRỰC: Khi bấm nút ⭐ THƯỜNG TRỰC (selectedDoanThe === 'BAN_THUONG_TRUC' hoặc selectedChucDanh === 'Thường trực')
+      const isFilterBTT = filters.selectedDoanThe === 'BAN_THUONG_TRUC' || filters.selectedChucDanh === 'Thường trực';
+      if (isFilterBTT) {
+        if (!isBanThuongTruc(p)) return false;
+
+        // Bỏ qua điều kiện lọc Khu phố (không ép khu_pho !== null để hiện đủ 5 đồng chí Thường trực)
+        if (filters.searchQuery.trim()) {
+          const rawQ = filters.searchQuery.trim();
+          const query = removeVietnameseTones(rawQ).toLowerCase();
+          const nameClean = removeVietnameseTones(p.hoTen).toLowerCase();
+          const phoneClean = String(p.soDienThoai || '').replace(/\D/g, '');
+          const queryDigits = query.replace(/\D/g, '');
+          const matchName = nameClean.includes(query);
+          const matchPhone = queryDigits.length >= 3 && phoneClean.includes(queryDigits);
+          if (!matchName && !matchPhone) return false;
+        }
+
+        return true;
+      }
+
       // 1. Nếu ô tìm kiếm có chữ -> CHỈ tìm theo Họ Tên, Số Điện Thoại hoặc Viết tắt Khu Phố
       if (filters.searchQuery.trim()) {
         const rawQ = filters.searchQuery.trim();
@@ -445,9 +495,10 @@ export default function App() {
     }).sort((a, b) => {
       const getRolePriority = (person: Personnel) => {
         if (isBanThuongTruc(person)) return 0;
-        if (isKeyLeader(person)) return 1;
-        if (isDeputyLeader(person)) return 2;
-        return 3;
+        if (isChuyenVien(person)) return 1;
+        if (isKeyLeader(person)) return 2;
+        if (isDeputyLeader(person)) return 3;
+        return 4;
       };
       const roleDiff = getRolePriority(a) - getRolePriority(b);
       if (roleDiff !== 0) return roleDiff;
@@ -597,7 +648,9 @@ export default function App() {
           <StatsOverview
             personnelList={personnelList}
             currentFilterType={
-              filters.selectedDoanThe === 'BAN_THUONG_TRUC'
+              filters.selectedChucDanh === 'Chuyên viên' || filters.selectedDoanThe === 'CHUYEN_VIEN'
+                ? 'CHUYEN_VIEN'
+                : filters.selectedDoanThe === 'BAN_THUONG_TRUC'
                 ? 'BTT'
                 : filters.selectedChucDanh === 'Trưởng ban'
                 ? 'TRUONG_BAN'
@@ -610,6 +663,15 @@ export default function App() {
             onSelectQuickFilter={(type) => {
               if (type === 'ALL') {
                 setFilters(prev => ({ ...prev, searchQuery: '', selectedKhuPho: 'ALL', selectedChucDanh: 'ALL', selectedDoanThe: 'ALL', onlyCapUy: false }));
+              } else if (type === 'CHUYEN_VIEN') {
+                setFilters(prev => ({
+                  ...prev,
+                  searchQuery: '',
+                  selectedKhuPho: 'ALL',
+                  selectedDoanThe: 'ALL',
+                  selectedChucDanh: prev.selectedChucDanh === 'Chuyên viên' ? 'ALL' : 'Chuyên viên',
+                  onlyCapUy: false,
+                }));
               } else if (type === 'BTT') {
                 setFilters(prev => ({
                   ...prev,

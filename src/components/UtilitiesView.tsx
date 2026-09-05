@@ -1106,6 +1106,53 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
       {/* ========================================================================= */}
       {activeUtilityTab === null && (
         <div className="space-y-4 animate-in fade-in duration-200">
+          {/* THẺ TIỆN ÍCH SỐ (SMART ACTION CARD): BÌNH DÂN HỌC VỤ SỐ - ƯU TIÊN HÀNG ĐẦU */}
+          <div
+            id="card-binh-dan-hoc-vu-so"
+            className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-50/90 via-sky-50/70 to-indigo-50/80 border border-blue-200/80 shadow-2xs hover:shadow-md transition-all relative overflow-hidden"
+          >
+            {/* Subtle tech background glow */}
+            <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/30 border border-blue-500">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 text-white shadow-xs animate-pulse ring-2 ring-rose-200 drop-shadow-xs"
+                      title="Chương trình số 2026"
+                    >
+                      <Zap className="w-3 h-3 fill-current text-amber-100 shrink-0" />
+                      <span>CHƯƠNG TRÌNH SỐ 2026</span>
+                    </span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
+                    Bình dân học vụ số – Kỹ năng số cho Nhân dân
+                  </h3>
+                  <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                    Khóa học bồi dưỡng kỹ năng số toàn dân, hướng dẫn sử dụng dịch vụ công trực tuyến và tiện ích số văn minh.
+                  </p>
+                </div>
+              </div>
+
+              <div className="shrink-0 pt-1 sm:pt-0">
+                <a
+                  href="https://binhdanhocvuso.gov.vn/courses/course-v1:MOET+KNS-ND+2026-1/course/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold shadow-sm shadow-blue-600/20 hover:shadow-md transition-all cursor-pointer whitespace-nowrap"
+                >
+                  <span>Tham gia học ngay</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* LƯỚI 4 THẺ TIỆN ÍCH */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {/* THẺ 1: THỐNG KÊ */}
           <div
@@ -1208,52 +1255,6 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
             <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-amber-800">
               <span>Đóng góp ý kiến</span>
               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </div>
-        </div>
-
-        {/* THẺ TIỆN ÍCH SỐ (SMART ACTION CARD): BÌNH DÂN HỌC VỤ SỐ */}
-        <div
-          id="card-binh-dan-hoc-vu-so"
-          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-50/90 via-sky-50/70 to-indigo-50/80 border border-blue-200/80 shadow-2xs hover:shadow-md transition-all relative overflow-hidden"
-        >
-          {/* Subtle tech background glow */}
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-            <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/30 border border-blue-500">
-                <GraduationCap className="w-6 h-6 text-white" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 text-white shadow-xs animate-pulse ring-2 ring-rose-200 drop-shadow-xs"
-                    title="Chương trình số 2026"
-                  >
-                    <Zap className="w-3 h-3 fill-current text-amber-100 shrink-0" />
-                    <span>CHƯƠNG TRÌNH SỐ 2026</span>
-                  </span>
-                </div>
-                <h3 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
-                  Bình dân học vụ số - Kỹ năng số cho Nhân dân
-                </h3>
-                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-                  Khóa học bồi dưỡng kỹ năng số toàn dân, hướng dẫn sử dụng dịch vụ công trực tuyến và tiện ích số văn minh.
-                </p>
-              </div>
-            </div>
-
-            <div className="shrink-0 pt-1 sm:pt-0">
-              <a
-                href="https://binhdanhocvuso.gov.vn/courses/course-v1:MOET+KNS-ND+2026-1/course/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold shadow-sm shadow-blue-600/20 hover:shadow-md transition-all cursor-pointer whitespace-nowrap"
-              >
-                <span>Tham gia học ngay</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
             </div>
           </div>
         </div>

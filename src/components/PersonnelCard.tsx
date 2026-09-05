@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, MapPin, Award, Shield, Copy, Check, MessageCircle, AlertTriangle, Calendar, User } from 'lucide-react';
 import { Personnel } from '../types';
-import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
+import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink, getCombinedRole } from '../utils/helpers';
 
 interface PersonnelCardProps {
   personnel: Personnel;
@@ -71,13 +71,7 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
     : 'bg-red-50 text-red-800 border border-red-200';
 
   const formattedRole = () => {
-    const rawRole = isParty 
-      ? (personnel.chucDanhKhac || 'Đại diện Cấp ủy Chi bộ') 
-      : (personnel.chucDanhMatTran || 'Thành viên');
-    const role = String(rawRole);
-    if (role.toUpperCase() === 'TRƯỞNG BAN') return 'Trưởng ban';
-    if (role.toUpperCase() === 'PHÓ TRƯỞNG BAN') return 'Phó Trưởng ban';
-    return role;
+    return getCombinedRole(personnel);
   };
 
   const roleTextClass = isBTT
@@ -112,8 +106,8 @@ export const PersonnelCard: React.FC<PersonnelCardProps> = ({
                 {personnel.hoTen}
               </h3>
               
-              {/* Role Title (e.g. Trưởng ban, Phó Trưởng ban) */}
-              <p className={`${roleTextClass} truncate mt-0.5`}>
+              {/* Role Title (e.g. Phó Chủ tịch UBMTTQVN phường - Chủ tịch Hội LHPN phường) */}
+              <p className={`${roleTextClass} truncate mt-0.5`} title={formattedRole()}>
                 {formattedRole()}
               </p>
             </div>

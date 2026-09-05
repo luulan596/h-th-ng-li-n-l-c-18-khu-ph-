@@ -27,12 +27,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
         {/* Hộp thư dân chủ cơ sở Feedback Tab */}
         <button
           onClick={() => onChangeTab('FEEDBACK')}
-          className={`flex flex-col items-center justify-center gap-0.5 text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider transition-colors relative ${
+          className={`flex flex-col items-center justify-center gap-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-wider transition-colors relative ${
             activeTab === 'FEEDBACK' ? 'text-red-700 font-extrabold' : 'text-slate-400 hover:text-slate-700'
           }`}
         >
           <Mail className={`w-5 h-5 ${activeTab === 'FEEDBACK' ? 'text-red-700 stroke-[2.5]' : ''}`} />
-          <span>Hộp thư</span>
+          <span className="whitespace-nowrap">Hộp thư góp ý</span>
           <span className="absolute top-1.5 right-2 w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
         </button>
 

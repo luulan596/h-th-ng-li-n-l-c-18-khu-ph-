@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Landmark, MapPin, Navigation, Image as ImageIcon, X, Clock, Ticket, ExternalLink, Sparkles } from 'lucide-react';
 import { RedSite } from '../types';
-import { handleImageError } from './RedAddressesView';
+import { formatImageUrl, handleImageError } from './RedAddressesView';
 
 interface RedAddressDetailModalProps {
   site: RedSite | null;
@@ -12,18 +12,6 @@ interface RedAddressDetailModalProps {
 // Helper: Convert Google Maps address to navigation link
 const getGoogleMapsDirLink = (address: string) => {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
-};
-
-// Helper: Parse Google Drive URLs
-const formatImageUrl = (url?: string) => {
-  if (!url) return '/pham-van-chi (1).png';
-  if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
-    const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (fileIdMatch && fileIdMatch[1]) {
-      return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
-    }
-  }
-  return url;
 };
 
 export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
@@ -121,7 +109,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
               {/* Banner Image */}
               <div className="rounded-2xl overflow-hidden h-52 sm:h-64 bg-slate-900 relative shadow-md">
                 <img
-                  src={formatImageUrl(site.imageUrl)}
+                  src={formatImageUrl(site.imageUrl, site.name)}
                   alt={site.name}
                   loading="eager"
                   fetchPriority="high"
@@ -182,7 +170,7 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
               {/* Large Display Photo */}
               <div className="rounded-2xl overflow-hidden h-64 sm:h-80 bg-slate-900 shadow-md relative group">
                 <img
-                  src={formatImageUrl(galleryList[activeImageIndex] || site.imageUrl)}
+                  src={formatImageUrl(galleryList[activeImageIndex] || site.imageUrl, site.name)}
                   alt={`${site.name} ảnh ${activeImageIndex + 1}`}
                   loading="eager"
                   fetchPriority="high"
@@ -207,9 +195,10 @@ export const RedAddressDetailModal: React.FC<RedAddressDetailModalProps> = ({
                       }`}
                     >
                       <img
-                        src={formatImageUrl(img)}
+                        src={formatImageUrl(img, site.name)}
                         alt="thumb"
                         loading="eager"
+                        fetchPriority="high"
                         decoding="async"
                         onError={(e) => handleImageError(e, site.name || img)}
                         className="w-full h-full object-cover"

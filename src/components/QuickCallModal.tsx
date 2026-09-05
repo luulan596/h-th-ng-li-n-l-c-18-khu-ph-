@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, MessageCircle, Copy, MapPin, X, Check, Shield, Award, Share2, AlertTriangle, User } from 'lucide-react';
 import { Personnel } from '../types';
-import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink } from '../utils/helpers';
+import { isBanThuongTruc, isChuyenVien, isKeyLeader, isDeputyLeader, isPartyOfficial, formatPhoneNumber, getTelLink, getZaloLink, getCombinedRole } from '../utils/helpers';
 
 interface QuickCallModalProps {
   personnel: Personnel | null;
@@ -93,9 +93,7 @@ export const QuickCallModal: React.FC<QuickCallModalProps> = ({ personnel, onClo
                 {personnel.hoTen}
               </h3>
               <p className="text-xs text-amber-200 font-bold tracking-tight mt-0.5">
-                {isParty 
-                  ? (personnel.chucDanhKhac || 'Đại diện Cấp ủy Chi bộ') 
-                  : ((personnel.chucDanhMatTran?.toUpperCase() === 'TRƯỞNG BAN' ? 'Trưởng ban' : personnel.chucDanhMatTran?.toUpperCase() === 'PHÓ TRƯỞNG BAN' ? 'Phó Trưởng ban' : personnel.chucDanhMatTran) || 'Thành viên')}
+                {getCombinedRole(personnel)}
               </p>
             </div>
           </div>
