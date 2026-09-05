@@ -6,7 +6,7 @@
  * tải nhanh các tài nguyên tĩnh và bảo vệ dữ liệu danh bạ, địa chỉ đỏ khi mất kết nối mạng.
  */
 
-const CACHE_NAME = 'mttq-binh-tien-v2026-icon';
+const CACHE_NAME = 'mat-tran-v2026-final';
 
 // Danh sách các tài nguyên tĩnh cần nạp vào bộ nhớ đệm ban đầu
 const STATIC_ASSETS = [
@@ -14,11 +14,6 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/mat-tran-logo.svg',
-  '/mat_tran_logo.svg',
-  '/pwa-512x512.png?v=2026',
-  '/pwa-192x192.png?v=2026',
-  '/maskable-icon-512x512.png?v=2026',
-  '/apple-touch-icon.png?v=2026',
   'https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Merriweather:wght@400;700;900&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
@@ -43,7 +38,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((name) => {
           if (name !== CACHE_NAME) {
-            console.log('[ServiceWorker] Đang xóa bộ nhớ đệm phiên bản cũ:', name);
+            console.log('[ServiceWorker] Đang quét và xóa toàn bộ bộ nhớ đệm phiên bản cũ:', name);
             return caches.delete(name);
           }
         })
