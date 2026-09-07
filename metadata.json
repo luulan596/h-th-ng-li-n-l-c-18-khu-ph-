@@ -1,6 +1,6 @@
 {
-  "name": "Remix Danh Sách Nhân Sự Mặt Trận Khu Phố 1",
-  "description": "Ứng dụng tra cứu danh bạ nhân sự Ban công tác Mặt trận 18 khu phố Phường Bình Tiên, Hộp thư dân chủ cơ sở tiếp nhận ý kiến Nhân dân, gọi điện nhanh, bản đồ trụ sở hành chính và địa chỉ đỏ.",
+  "name": "Mặt Trận Tổ Quốc Việt Nam Phường Bình Tiên",
+  "description": "Hệ thống liên lạc Ban công tác Mặt trận 18 Khu phố Phường Bình Tiên - Lắng nghe & đồng hành cùng Nhân dân",
   "requestFramePermissions": [
     "geolocation"
   ],
