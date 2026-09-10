@@ -55,7 +55,7 @@ const getHistoricalExcerptProfile = (site: RedSite): HistoricalExcerptProfile | 
   if (query.includes('hoa vận') || query.includes('hoa van') || query.includes('gia phú') || query.includes('hầm in') || query.includes('red-site-3')) {
     return {
       name: 'Hầm in bí mật của Ban Tuyên huấn Hoa vận',
-      exactAddress: 'Số 341/10 Gia Phú,
+      exactAddress: 'Số 341/10 Gia Phú, Phường Bình Tiên',
       categoryBadge: 'Di tích Lịch sử Cấp Quốc gia (QĐ số 2009/1998/QĐ-BVHTT)',
       quotes: [
         'Năm 1961, bộ phận Tuyên huấn của Ban cán sự Công vận người Hoa đã tổ chức một sở bí mật in truyền đơn bằng chữ Hoa ngay trong nội thành nhằm góp phần phổ biến kịp thời những tin tức thời sự nóng bỏng của quân và dân trên chiến trường, các chủ trương, chính sách của Mặt trận, cổ vũ, động viên phong trào đấu tranh của các tầng lớp nhân dân trong thành phố.',
