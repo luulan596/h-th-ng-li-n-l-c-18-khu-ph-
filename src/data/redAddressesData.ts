@@ -50,7 +50,7 @@ export const RED_ADDRESSES_DATA: RedSite[] = [
     id: 'red-site-3',
     name: 'Hầm In Bí Mật Của Ban Tuyên Huấn Hoa Vận',
     category: 'Di tích Lịch sử Cấp Quốc gia',
-    address: 'Số 341/10 Gia Phú, phường 1 - quận 6, Phường Bình Tiên, TP.HCM',
+    address: 'Số 341/10 Gia Phú, Phường Bình Tiên, TP.HCM',
     summary: 'Năm 1961, bộ phận Tuyên huấn của Ban cán sự Công vận người Hoa đã tổ chức một sở bí mật in truyền đơn bằng chữ Hoa ngay trong nội thành nhằm góp phần phổ biến kịp thời những tin tức thời sự nóng bỏng của quân và dân trên chiến trường, các chủ trương, chính sách của Mặt trận, cổ vũ, động viên phong trào đấu tranh của các tầng lớp nhân dân trong thành phố.\n\nNgày 26/09/1998, Bộ Văn hóa Thông tin nay là Bộ Văn hóa, Thể dục, Thể thao đã ban hành Quyết định số 2009/1998/QĐ-BVHTT công nhận Di tích lịch sử Hầm bí mật in tài liệu của Ban Tuyên huấn Hoa vận trong thời kỳ chống Mỹ cứu nước tại số 341/10 đường Gia Phú, phường 1- quận 6.',
     detailedHistory: 'Địa chỉ này là nơi để nhân dân tham quan, tìm hiểu, nghiên cứu các giá trị về lịch sử, các hiện vật và truyền thống đấu tranh chống Mỹ của đồng bào Hoa quận 6, thành phố Hồ Chí Minh nói riêng và của dân tộc Việt Nam nói chung nhằm giáo dục truyền thống đấu tranh cách mạng cho nhân dân, cho các thế hệ thanh thiếu niên hôm nay và mai sau.',
     imageUrl: '/ham-in-hoa-van.png',
