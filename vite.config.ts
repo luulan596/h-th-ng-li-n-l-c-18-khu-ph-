@@ -63,10 +63,14 @@ export default defineConfig(() => {
         },
       },
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.js',
         registerType: 'autoUpdate',
         injectRegister: false,
         devOptions: {
           enabled: true,
+          type: 'module',
         },
         includeAssets: ['mat_tran_logo.svg', 'icon.png'],
         manifest: {
@@ -100,64 +104,8 @@ export default defineConfig(() => {
             }
           ]
         },
-        workbox: {
-          skipWaiting: true,
-          clientsClaim: true,
+        injectManifest: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          navigateFallback: '/index.html',
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            },
-            {
-              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'gstatic-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            },
-            {
-              urlPattern: /^https:\/\/unpkg\.leaflet.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'leaflet-cdn-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 30
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            },
-            {
-              // DO NOT CACHE Google Apps Script API responses in SW cache
-              urlPattern: /^https:\/\/script\.google\.com\/.*/i,
-              handler: 'NetworkOnly'
-            },
-            {
-              urlPattern: /^https:\/\/script\.googleusercontent\.com\/.*/i,
-              handler: 'NetworkOnly'
-            }
-          ]
         }
       })
     ],
