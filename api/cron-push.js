@@ -94,6 +94,14 @@ export default async function handler(req, res) {
 
     // 3. Gửi thông báo Push đến từng thiết bị nếu có cấu hình VAPID
     let sentCount = 0;
+    const failedPushes = [];
+
+    if (!vapidPrivateKey) {
+      failedPushes.push({
+        message: 'VAPID_PRIVATE_KEY chưa được cấu hình trong Environment Variables',
+      });
+    }
+
     if (vapidPrivateKey && subscribers.length > 0) {
       for (const notif of notificationsToSend) {
         const locationText = notif.dia_diem ? ` (Địa điểm: ${notif.dia_diem})` : '';
@@ -117,17 +125,39 @@ export default async function handler(req, res) {
               try {
                 subData = JSON.parse(subData);
               } catch {
-                // fallback
+                failedPushes.push({
+                  subscriberId: sub?.id || null,
+                  message: 'Không thể parse JSON subscription',
+                });
+                return;
               }
             }
 
-            if (subData && subData.endpoint) {
-              await webpush.sendNotification(subData, payload);
-              sentCount++;
+            if (!subData || !subData.endpoint) {
+              failedPushes.push({
+                subscriberId: sub?.id || null,
+                message: 'Dữ liệu subscription thiếu endpoint',
+              });
+              return;
             }
+
+            await webpush.sendNotification(subData, payload);
+            sentCount++;
           } catch (err) {
-            // Bỏ qua lỗi token hết hạn hoặc thiết bị hủy đăng ký
-            console.error('Lỗi gửi tới subscription:', err?.message);
+            const statusCode = err?.statusCode || null;
+            const isExpired = statusCode === 404 || statusCode === 410;
+            failedPushes.push({
+              subscriberId: sub?.id || null,
+              statusCode,
+              message: err?.message || 'Lỗi gửi Push Notification',
+              ...(err?.body ? { body: typeof err.body === 'string' ? err.body.trim() : err.body } : {}),
+              ...(isExpired ? { expired: true } : {}),
+            });
+            console.error(`[cron-push] Lỗi gửi tới subscriber ${sub?.id || 'không rõ'}:`, {
+              statusCode,
+              message: err?.message,
+              ...(isExpired ? { expired: true } : {}),
+            });
           }
         });
 
@@ -147,12 +177,18 @@ export default async function handler(req, res) {
       }
     }
 
+    const failedCount = failedPushes.length;
+
     return res.status(200).json({
-      success: true,
-      message: 'Đã gửi Push Notification thành công!',
+      success: sentCount > 0,
+      message: sentCount > 0
+        ? `Đã gửi thành công ${sentCount}/${subscribers.length} thiết bị`
+        : `Không gửi được Push đến thiết bị nào`,
       notificationsCount: notificationsToSend.length,
       subscribersCount: subscribers.length,
       sentCount,
+      failedCount,
+      failedPushes,
     });
   } catch (error) {
     console.error('Lỗi cron-push:', error);
