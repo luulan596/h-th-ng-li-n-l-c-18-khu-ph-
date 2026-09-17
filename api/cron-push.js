@@ -8,20 +8,33 @@ const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || 'BILyGewTFhuMq8oK1CPqXHtjwCOSN4-MN_xkYQJ1qqWCPceYysjNESA5yw3DO-WhtffmWGfuXlkFqLYMt62oslY';
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
+const vapidPublicKey = (process.env.VAPID_PUBLIC_KEY || '').trim();
+const vapidPrivateKey = (process.env.VAPID_PRIVATE_KEY || '').trim();
 
-if (vapidPrivateKey) {
+let vapidReady = false;
+let vapidInitError = null;
+
+function initVapid() {
+  if (vapidReady) return;
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    vapidInitError = 'Thiếu VAPID_PUBLIC_KEY hoặc VAPID_PRIVATE_KEY trong Environment Variables';
+    return;
+  }
   try {
     webpush.setVapidDetails(
       'mailto:mttqbinhtien@gmail.com',
       vapidPublicKey,
       vapidPrivateKey
     );
+    vapidReady = true;
+    vapidInitError = null;
   } catch (err) {
-    console.warn('[cron-push] Không thể khởi tạo VAPID details:', err?.message);
+    vapidReady = false;
+    vapidInitError = err?.message || 'Lỗi khởi tạo VAPID';
   }
 }
+
+initVapid();
 
 export default async function handler(req, res) {
   // Bật CORS để hỗ trợ gọi ngầm từ client-side
@@ -92,17 +105,24 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. Gửi thông báo Push đến từng thiết bị nếu có cấu hình VAPID
-    let sentCount = 0;
-    const failedPushes = [];
+    // 3. Gửi thông báo Push đến từng thiết bị nếu VAPID đã sẵn sàng
+    if (!vapidReady) {
+      initVapid();
+    }
 
-    if (!vapidPrivateKey) {
-      failedPushes.push({
-        message: 'VAPID_PRIVATE_KEY chưa được cấu hình trong Environment Variables',
+    if (!vapidReady) {
+      return res.status(200).json({
+        success: false,
+        message: 'Không thể khởi tạo VAPID',
+        vapidReady: false,
+        vapidInitError,
       });
     }
 
-    if (vapidPrivateKey && subscribers.length > 0) {
+    let sentCount = 0;
+    const failedPushes = [];
+
+    if (subscribers.length > 0) {
       for (const notif of notificationsToSend) {
         const locationText = notif.dia_diem ? ` (Địa điểm: ${notif.dia_diem})` : '';
         const payload = JSON.stringify({
@@ -184,6 +204,7 @@ export default async function handler(req, res) {
       message: sentCount > 0
         ? `Đã gửi thành công ${sentCount}/${subscribers.length} thiết bị`
         : `Không gửi được Push đến thiết bị nào`,
+      vapidReady: true,
       notificationsCount: notificationsToSend.length,
       subscribersCount: subscribers.length,
       sentCount,
