@@ -120,6 +120,7 @@ export default async function handler(req, res) {
     }
 
     let sentCount = 0;
+    let deletedCount = 0;
     const failedPushes = [];
 
     if (subscribers.length > 0) {
@@ -165,18 +166,55 @@ export default async function handler(req, res) {
             sentCount++;
           } catch (err) {
             const statusCode = err?.statusCode || null;
+            const bodyText = typeof err?.body === 'string' ? err.body : '';
             const isExpired = statusCode === 404 || statusCode === 410;
+
+            const shouldDeleteSubscription =
+              statusCode === 404 ||
+              statusCode === 410 ||
+              (statusCode === 400 && bodyText.includes('VapidPkHashMismatch')) ||
+              (statusCode === 403 && bodyText.includes('do not correspond to the credentials used to create the subscriptions'));
+
+            let deleted = false;
+            let deleteError = null;
+
+            if (shouldDeleteSubscription && sub?.id && supabase) {
+              try {
+                const { error: delErr } = await supabase
+                  .from('push_subscribers')
+                  .delete()
+                  .eq('id', sub.id);
+
+                if (delErr) {
+                  deleteError = delErr.message;
+                  console.warn(`[cron-push] Lỗi khi xóa subscriber ${sub.id}:`, delErr.message);
+                } else {
+                  deleted = true;
+                  deletedCount++;
+                  console.log(`[cron-push] Đã tự động xóa subscriber hỏng/lệch VAPID (id: ${sub.id}, status: ${statusCode})`);
+                }
+              } catch (delCatchErr) {
+                deleteError = delCatchErr?.message || 'Lỗi ngoại lệ khi xóa';
+                console.warn(`[cron-push] Ngoại lệ khi xóa subscriber ${sub.id}:`, deleteError);
+              }
+            }
+
             failedPushes.push({
               subscriberId: sub?.id || null,
               statusCode,
               message: err?.message || 'Lỗi gửi Push Notification',
-              ...(err?.body ? { body: typeof err.body === 'string' ? err.body.trim() : err.body } : {}),
+              ...(bodyText ? { body: bodyText.trim() } : {}),
               ...(isExpired ? { expired: true } : {}),
+              ...(deleted ? { deleted: true } : {}),
+              ...(deleteError ? { deleteError } : {}),
             });
+
             console.error(`[cron-push] Lỗi gửi tới subscriber ${sub?.id || 'không rõ'}:`, {
               statusCode,
               message: err?.message,
               ...(isExpired ? { expired: true } : {}),
+              ...(deleted ? { deleted: true } : {}),
+              ...(deleteError ? { deleteError } : {}),
             });
           }
         });
@@ -208,6 +246,7 @@ export default async function handler(req, res) {
       notificationsCount: notificationsToSend.length,
       subscribersCount: subscribers.length,
       sentCount,
+      deletedCount,
       failedCount,
       failedPushes,
     });
