@@ -19,6 +19,11 @@ import {
   getGoogleDriveDownloadUrl
 } from '../services';
 import {
+  formatVietnamTimeToUtcISO,
+  parseUtcToVietnamTime,
+  getVietnamTimeParts
+} from '../utils/dateUtils';
+import {
   BarChart3,
   Calendar,
   CalendarDays,
@@ -201,8 +206,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
   const [notifLocation, setNotifLocation] = useState('');
   const [notifContent, setNotifContent] = useState('');
   const [notifDate, setNotifDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return getVietnamTimeParts().date;
   });
   const [notifHour, setNotifHour] = useState('08');
   const [notifMinute, setNotifMinute] = useState('30');
@@ -833,8 +837,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
     setNotifTitle('');
     setNotifLocation('');
     setNotifContent('');
-    const today = new Date();
-    setNotifDate(today.toISOString().split('T')[0]);
+    setNotifDate(getVietnamTimeParts().date);
     setNotifHour('08');
     setNotifMinute('30');
   };
@@ -849,13 +852,10 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
 
     if (item.thoi_gian_gui) {
       try {
-        const dt = new Date(item.thoi_gian_gui);
-        if (!isNaN(dt.getTime())) {
-          const dateStr = item.thoi_gian_gui.includes('T') ? item.thoi_gian_gui.split('T')[0] : dt.toISOString().split('T')[0];
-          setNotifDate(dateStr);
-          setNotifHour(String(dt.getHours()).padStart(2, '0'));
-          setNotifMinute(String(dt.getMinutes()).padStart(2, '0'));
-        }
+        const vnTime = parseUtcToVietnamTime(item.thoi_gian_gui);
+        setNotifDate(vnTime.date);
+        setNotifHour(vnTime.hour);
+        setNotifMinute(vnTime.minute);
       } catch {
         // fallback
       }
@@ -980,7 +980,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
     }
 
     setIsSavingNotif(true);
-    const scheduledTime = `${notifDate}T${notifHour}:${notifMinute}:00`;
+    const scheduledTime = formatVietnamTimeToUtcISO(notifDate, notifHour, notifMinute);
 
     try {
       if (editingNotifId) {
@@ -1076,21 +1076,16 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
     }
   };
 
-  // Kiểm tra lịch có bị hết hạn (ngày họp nhỏ hơn ngày hôm nay) hay không
+  // Kiểm tra lịch có bị hết hạn (ngày họp nhỏ hơn ngày hôm nay theo giờ Việt Nam) hay không
   const isMeetingExpired = (meetingDateStr?: string): boolean => {
     if (!meetingDateStr) return false;
-    const meetingDate = new Date(meetingDateStr);
-    if (isNaN(meetingDate.getTime())) return false;
-
-    // Lấy 00:00:00 của ngày hôm nay theo giờ địa phương
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
-
-    // Lấy 00:00:00 của ngày họp
-    const meetingDayStart = new Date(meetingDate.getFullYear(), meetingDate.getMonth(), meetingDate.getDate(), 0, 0, 0, 0).getTime();
-
-    // Nếu ngày họp nhỏ hơn ngày hôm nay => đã qua ngày (hết hạn)
-    return meetingDayStart < todayStart;
+    try {
+      const vnMeetingDate = parseUtcToVietnamTime(meetingDateStr).date;
+      const vnToday = getVietnamTimeParts().date;
+      return vnMeetingDate < vnToday;
+    } catch {
+      return false;
+    }
   };
 
   // Kiểm tra thông báo mới tạo trong vòng 24 giờ
@@ -1120,6 +1115,7 @@ export const UtilitiesView: React.FC<UtilitiesViewProps> = ({
       const d = new Date(isoString);
       if (isNaN(d.getTime())) return isoString;
       return d.toLocaleDateString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
         weekday: 'long',
         day: '2-digit',
         month: '2-digit',
