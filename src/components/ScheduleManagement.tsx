@@ -32,6 +32,11 @@ import {
   broadcastToAllDevices,
   startNotificationBackgroundScheduler
 } from '../services/notificationService';
+import {
+  formatVietnamTimeToUtcISO,
+  parseUtcToVietnamTime,
+  getVietnamTimeParts
+} from '../utils/dateUtils';
 
 interface ScheduleManagementProps {
   onShowToast?: (msg: string) => void;
@@ -61,8 +66,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
   // Form inputs
   const [notifTitle, setNotifTitle] = useState<string>('');
   const [notifDate, setNotifDate] = useState<string>(() => {
-    const d = new Date();
-    return d.toISOString().split('T')[0];
+    return getVietnamTimeParts().date;
   });
   const [notifHour, setNotifHour] = useState<string>('08');
   const [notifMinute, setNotifMinute] = useState<string>('00');
@@ -121,35 +125,24 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
   // NÚT CHỌN NHANH 'SAU 5 PHÚT NỮA' & CHUẨN HÓA GIỜ VIỆT NAM (GMT+7)
   const handleSetPlus5Minutes = () => {
-    const now = new Date();
-    // Cộng thêm đúng 5 phút
-    const target = new Date(now.getTime() + 5 * 60 * 1000);
-    const year = target.getFullYear();
-    const month = String(target.getMonth() + 1).padStart(2, '0');
-    const date = String(target.getDate()).padStart(2, '0');
-    const hour = String(target.getHours()).padStart(2, '0');
-    const minute = String(target.getMinutes()).padStart(2, '0');
+    // Cộng thêm đúng 5 phút và chuẩn hóa theo múi giờ Việt Nam
+    const target = new Date(Date.now() + 5 * 60 * 1000);
+    const vnPlus5 = getVietnamTimeParts(target);
 
-    setNotifDate(`${year}-${month}-${date}`);
-    setNotifHour(hour);
-    setNotifMinute(minute);
-    toast(`⏱️ Đã chọn phát sau 5 phút: ${hour}:${minute} (${date}/${month}/${year})`);
+    setNotifDate(vnPlus5.date);
+    setNotifHour(vnPlus5.hour);
+    setNotifMinute(vnPlus5.minute);
+    toast(`⏱️ Đã chọn phát sau 5 phút: ${vnPlus5.hour}:${vnPlus5.minute} (${vnPlus5.day}/${vnPlus5.month}/${vnPlus5.year})`);
   };
 
   const handleSetToday = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const date = String(now.getDate()).padStart(2, '0');
-    setNotifDate(`${year}-${month}-${date}`);
+    const vnNow = getVietnamTimeParts();
+    setNotifDate(vnNow.date);
   };
 
   const handleSetTomorrow = () => {
-    const tomorrow = new Date(Date.now() + 86400000);
-    const year = tomorrow.getFullYear();
-    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const date = String(tomorrow.getDate()).padStart(2, '0');
-    setNotifDate(`${year}-${month}-${date}`);
+    const vnTomorrow = getVietnamTimeParts(new Date(Date.now() + 86400000));
+    setNotifDate(vnTomorrow.date);
   };
 
   // Open Admin Workspace
@@ -184,8 +177,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
   // Reset form
   const handleResetForm = () => {
     setNotifTitle('');
-    const d = new Date();
-    setNotifDate(d.toISOString().split('T')[0]);
+    setNotifDate(getVietnamTimeParts().date);
     setNotifHour('08');
     setNotifMinute('00');
     setNotifLocation('Hội trường UBND Phường');
@@ -203,13 +195,10 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
     if (item.thoi_gian_gui) {
       try {
-        const dt = new Date(item.thoi_gian_gui);
-        const year = dt.getFullYear();
-        const month = String(dt.getMonth() + 1).padStart(2, '0');
-        const date = String(dt.getDate()).padStart(2, '0');
-        setNotifDate(`${year}-${month}-${date}`);
-        setNotifHour(String(dt.getHours()).padStart(2, '0'));
-        setNotifMinute(String(dt.getMinutes()).padStart(2, '0'));
+        const vnTime = parseUtcToVietnamTime(item.thoi_gian_gui);
+        setNotifDate(vnTime.date);
+        setNotifHour(vnTime.hour);
+        setNotifMinute(vnTime.minute);
       } catch {
         // fallback
       }
@@ -281,7 +270,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
     setIsSavingSchedule(true);
     try {
-      const scheduledDateTime = `${notifDate}T${notifHour}:${notifMinute}:00`;
+      const scheduledDateTime = formatVietnamTimeToUtcISO(notifDate, notifHour, notifMinute);
       const itemToSave = {
         id: editingNotifId || undefined,
         tieu_de: notifTitle.trim(),
@@ -320,7 +309,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
     setIsSendingImmediate(true);
     try {
-      const scheduledDateTime = `${notifDate}T${notifHour}:${notifMinute}:00`;
+      const scheduledDateTime = formatVietnamTimeToUtcISO(notifDate, notifHour, notifMinute);
       const title = notifTitle.trim();
       const content = notifContent.trim() || 'Kính mời các đồng chí tham dự cuộc họp công tác theo lịch.';
       const location = notifLocation.trim() || 'Hội trường UBND Phường';
@@ -392,6 +381,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     try {
       const d = new Date(dateStr);
       return d.toLocaleDateString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
         weekday: 'short',
         day: '2-digit',
         month: '2-digit',
@@ -407,8 +397,10 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     try {
       const d = new Date(dateStr);
       return d.toLocaleTimeString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
       });
     } catch {
       return '';
@@ -497,11 +489,9 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
   const publicScheduleList = scheduledNotifs.filter((item) => {
     if (!item.thoi_gian_gui) return true;
     try {
-      const d = new Date(item.thoi_gian_gui);
-      // Keep today and upcoming
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-      return d.getTime() >= startOfToday.getTime();
+      const vnMeetingDate = parseUtcToVietnamTime(item.thoi_gian_gui).date;
+      const vnToday = getVietnamTimeParts().date;
+      return vnMeetingDate >= vnToday;
     } catch {
       return true;
     }
