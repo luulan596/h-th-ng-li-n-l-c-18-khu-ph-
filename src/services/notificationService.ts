@@ -15,7 +15,8 @@ import { getSupabase } from './supabaseClient';
 /**
  * Hằng số VAPID Public Key chính thức
  */
-export const VAPID_PUBLIC_KEY = 'BILyGewTFhuMq8oK1CPqXHtjwCOSN4-MN_xkYQJ1qqWCPceYysjNESA5yw3DO-WhtffmWGfuXlkFqLYMt62oslY';
+export const VAPID_PUBLIC_KEY =
+  (import.meta.env.VITE_VAPID_PUBLIC_KEY || '').trim();
 
 const LOCAL_PUSH_SUBSCRIBER_KEY = 'mttq_push_subscriber_device';
 const LOCAL_SCHEDULED_NOTIFS_KEY = 'mttq_scheduled_notifications_v2026';
@@ -32,6 +33,17 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
+}
+
+/**
+ * Helper so sánh byte-by-byte 2 Uint8Array
+ */
+function areByteArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 /**
@@ -73,16 +85,65 @@ export async function registerPushSubscriber(): Promise<{
       }
     }
 
+    // Kiểm tra cấu hình VAPID_PUBLIC_KEY
+    if (!VAPID_PUBLIC_KEY) {
+      console.warn('[PushService] Thiếu cấu hình VITE_VAPID_PUBLIC_KEY');
+      return {
+        success: false,
+        message: 'Thiếu cấu hình VITE_VAPID_PUBLIC_KEY'
+      };
+    }
+
     const registration = await navigator.serviceWorker.ready;
 
-    // Lấy đối tượng đăng ký: const sub = await registration.pushManager.getSubscription() || await registration.pushManager.subscribe(...).
+    // Lấy đối tượng đăng ký hiện tại (nếu có)
     let sub: PushSubscription | null = await registration.pushManager.getSubscription();
 
+    // Tạo expectedKey từ VAPID_PUBLIC_KEY
+    const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+    if (sub) {
+      const currentRawKey = sub.options?.applicationServerKey;
+      if (currentRawKey) {
+        const currentKey = currentRawKey instanceof Uint8Array
+          ? currentRawKey
+          : new Uint8Array(currentRawKey);
+
+        const isMatch = areByteArraysEqual(currentKey, expectedKey);
+
+        if (!isMatch) {
+          console.warn('[PushService] Subscription cũ trên thiết bị dùng VAPID public key khác. Đang hủy đăng ký (unsubscribe) để tái tạo mới...');
+          try {
+            await sub.unsubscribe();
+          } catch (unsubErr) {
+            console.warn('[PushService] Lỗi khi unsubscribe subscription cũ:', unsubErr);
+          }
+          sub = null;
+        } else {
+          console.log('[PushService] Subscription hiện tại đã khớp chính xác với VAPID Public Key.');
+        }
+      } else {
+        console.warn('[PushService] Trình duyệt không cung cấp sub.options.applicationServerKey.');
+        // Cơ chế an toàn bản test: nếu backend đang chuyển VAPID key và thiết bị này chưa từng ghi nhận khớp với key mới
+        const localActiveKey = localStorage.getItem('mttq_active_vapid_key');
+        if (localActiveKey !== VAPID_PUBLIC_KEY) {
+          console.warn('[PushService] Thiết bị chưa đăng ký với VAPID key mới. Đang hủy subscription cũ của thiết bị này để subscribe lại...');
+          try {
+            await sub.unsubscribe();
+          } catch (unsubErr) {
+            console.warn('[PushService] Lỗi khi unsubscribe subscription cũ:', unsubErr);
+          }
+          sub = null;
+        }
+      }
+    }
+
+    // Nếu sub === null (chưa có hoặc vừa bị hủy do lệch key), tạo mới bằng expectedKey
     if (!sub) {
       try {
         sub = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          applicationServerKey: expectedKey
         });
       } catch (subscribeErr) {
         console.warn('[PushService] registration.pushManager.subscribe thử mới có lỗi, lấy subscription hiện hữu:', subscribeErr);
@@ -122,6 +183,7 @@ export async function registerPushSubscriber(): Promise<{
         subscription: subJSON,
         updated_at: new Date().toISOString()
       }));
+      localStorage.setItem('mttq_active_vapid_key', VAPID_PUBLIC_KEY);
     } catch (cacheErr) {
       // ignore
     }
