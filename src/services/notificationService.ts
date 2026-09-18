@@ -1134,44 +1134,6 @@ export async function broadcastToAllDevices(payload: {
       }
     }
 
-    // Kích hoạt ngoài màn hình khóa qua Service Worker trên thiết bị quản trị viên / thiết bị hiện tại
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        if (registration && 'showNotification' in registration) {
-          await registration.showNotification(formattedTitle, {
-            body: detailedBodyText,
-            icon: '/mat-tran-logo.svg',
-            badge: '/mat-tran-logo.svg',
-            vibrate: [200, 100, 200, 100, 300],
-            tag: notifId,
-            renotify: true,
-            requireInteraction: true,
-            data: {
-              url: '/#tien-ich',
-              id: notifId
-            }
-          } as NotificationOptions & { vibrate?: number[] });
-        }
-      } catch (swErr) {
-        console.warn('[Broadcast] ServiceWorker showNotification:', swErr);
-      }
-
-      try {
-        navigator.serviceWorker.controller?.postMessage({
-          type: 'SHOW_NOTIFICATION',
-          title: formattedTitle,
-          options: {
-            body: detailedBodyText,
-            tag: notifId,
-            data: { url: '/#tien-ich' }
-          }
-        });
-      } catch (msgErr) {
-        // bỏ qua
-      }
-    }
-
     // BƯỚC 3: Đồng thời cập nhật trạng thái trong bảng scheduled_notifications từ pending sang sent
     if (supabase && notifId && !notifId.startsWith('temp-')) {
       try {
